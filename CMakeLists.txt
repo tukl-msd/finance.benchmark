@@ -14,6 +14,10 @@ project(de.uni-kl.eit.ems.finance.heston.reference_models.benchmark)
 
 include(buildsys/CMakeShared.txt)
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 add_doxygen_support(../../)
 
 enable_testing()

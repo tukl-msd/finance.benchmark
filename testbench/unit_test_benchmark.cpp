@@ -16,12 +16,16 @@
 
 #include "HestonBenchmark.hpp"
 
+#include <thread>
+
 using namespace Finance;
 
 class HestonPricer: public HestonPricerBase {
 public:
 	virtual PricerResultPtr Run(HestonBenchmarkSetPtr set) {
 		PricerResultPtr res(new std::vector<double>(1, 0));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(123));
+		//usleep(123000);
 		return res;
 	}
 };
