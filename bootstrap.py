@@ -13,7 +13,14 @@
 import os
 
 tag = "v0.3"
-repo = "https+webdav://ekstera.eit.uni-kl.de/bazaar/development/common/buildsys/"
+
+if os.environ.get("BZR_USE_LOCAL", None) != '1':
+    repo = "https+webdav://ekstera.eit.uni-kl.de/bazaar/development/common/buildsys/"
+else:
+    repo_root = os.environ.get("BZR_COMMON_ROOT")
+    print(repo_root)
+    repo = os.path.join(repo_root, "buildsys")
+    print(repo)
 
 os.system("bzr branch " + repo + " buildsys -r " + tag)
 
