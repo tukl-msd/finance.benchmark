@@ -28,3 +28,6 @@ set(SOURCE
 )
 
 add_library(benchmark STATIC ${SOURCE} ${HEADERS})
+
+INSTALL(FILES ${HEADERS} DESTINATION include)
+#INSTALL(FILES benchmark DESTINATION lib)
