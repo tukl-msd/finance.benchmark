@@ -72,8 +72,8 @@ bool HestonBenchmark::RunSingleSet(unsigned int benchmark_set)
 		throw std::exception("Returned to few results");
 
 	std::cout << "Benchmark " << benchmark_set << " took " <<
-		std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() *
-		1000 * 1000	<< " s." << std::endl;
+		std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() /
+		1000. / 1000	<< " s." << std::endl;
 
 	PrettyPrintSimResult(set, res_set);
 
