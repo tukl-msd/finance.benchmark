@@ -34,15 +34,48 @@ HestonBenchmark::~HestonBenchmark()
 		delete _pPricer;
 }
 
+
+void HestonBenchmark::PrettyPrintSimResult(HestonBenchmarkSetPtr set, 
+			PricerResultPtr res_set) {
+	printf("======================RESULT====================\n");
+	for (std::vector<HestonBenchmarkParams>::size_type i = 0; 
+			i < set->size(); ++i) {
+		printf("Simulation result      = %f\n", res_set->at(i));
+		printf("Reference value        = %f\n", set->at(i).reference.Price);
+		printf("Precicion of reference = %f\n", set->at(i).reference.PricePrecision);
+	}
+	printf("======================RESULT====================\n\n");
+}
+
+
+HestonBarrierOptionSetPtr HestonBenchmark::getHestonBarrierOptionSet(
+		HestonBenchmarkSetPtr set) {
+	
+	HestonBarrierOptionSetPtr res(
+			new std::vector<HestonBarrierOption>(set->size()));
+	for (std::vector<HestonBenchmarkParams>::size_type i = 0; 
+			i < set->size(); ++i) {
+		(*res)[i] = (*set)[i].params;
+	}
+	return res;
+}
+
 bool HestonBenchmark::RunSingleSet(unsigned int benchmark_set)
 {
 	HestonBenchmarkSetPtr set = GetBenchmarkSet(benchmark_set);
+	HestonBarrierOptionSetPtr barrier_set = getHestonBarrierOptionSet(set);
 	auto t1 = std::chrono::high_resolution_clock::now();
-	_pPricer->Run(set);
+	PricerResultPtr res_set = _pPricer->Run(barrier_set);
 	auto t2 = std::chrono::high_resolution_clock::now();
+
+	if (res_set->size() != set->size())
+		throw std::exception("Returned to few results");
+
 	std::cout << "Benchmark " << benchmark_set << " took " <<
-		std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() 
-		<< " us." << std::endl;
+		std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() *
+		1000 * 1000	<< " s." << std::endl;
+
+	PrettyPrintSimResult(set, res_set);
 
 	//this->SelectBenchmarkSet(benchmark_set);
 
@@ -55,7 +88,7 @@ bool HestonBenchmark::RunSingleSet(unsigned int benchmark_set)
 bool HestonBenchmark::RunAll()
 {
 	bool res = true;
-	for (int i = 1; i <= GetNumberOfBenchmarkSets(); ++i)
+	for (unsigned int i = 1; i <= GetNumberOfBenchmarkSets(); ++i)
 		res &= RunSingleSet(i);
 	return res;
 }

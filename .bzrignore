@@ -1,4 +1,3 @@
 /build
-/build-msvc
-/build-msvc2
+/build-msvc*
 /buildsys

@@ -32,6 +32,10 @@ public:
 	/// Get benchmark set
 	HestonBenchmarkSetPtr GetBenchmarkSet(unsigned int benchmark_set);
 
+	/// Return BarrierOptions params set from Benchmark set
+	HestonBarrierOptionSetPtr getHestonBarrierOptionSet(
+			HestonBenchmarkSetPtr set);
+
 	/// run the selected benchmark set and check the results
 	/// \return true if the returned price matches the reference price
 	bool RunSingleSet(unsigned int benchmark_set);
@@ -46,6 +50,9 @@ public:
 private:
 	HestonPricerBase* _pPricer;
 	bool _ownPricer;
+
+	void PrettyPrintSimResult(HestonBenchmarkSetPtr set, 
+			PricerResultPtr res_set);
 };
 
 }

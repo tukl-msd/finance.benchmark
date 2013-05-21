@@ -126,7 +126,10 @@ struct HestonBenchmarkParams
 };
 
 typedef shared_ptr<std::vector<HestonBenchmarkParams> > HestonBenchmarkSetPtr;
+typedef shared_ptr<std::vector<HestonBarrierOption> > HestonBarrierOptionSetPtr;
 typedef shared_ptr<std::vector<double> > PricerResultPtr;
+
+
 
 
 }

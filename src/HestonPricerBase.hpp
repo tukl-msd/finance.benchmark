@@ -32,7 +32,7 @@ public:
 	virtual ~HestonPricerBase() {};
 
 	/// computes a new result and returns it
-	virtual PricerResultPtr Run(HestonBenchmarkSetPtr set) = 0;
+	virtual PricerResultPtr Run(HestonBarrierOptionSetPtr set) = 0;
 };
 
 }
