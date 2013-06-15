@@ -19,7 +19,7 @@ if os.environ.get("GIT_USE_LOCAL", None) != '1':
 else:
     repo_root = os.environ.get("GIT_COMMON_ROOT")
     print(repo_root)
-    repo = repo_root + "buildsys"
+    repo = repo_root + "/buildsys"
     print(repo)
 
 os.system("git clone " + repo + " buildsys")
