@@ -12,15 +12,17 @@
 
 import os
 
-tag = "v0.3"
+tag = "v0.4"
 
-if os.environ.get("BZR_USE_LOCAL", None) != '1':
+if os.environ.get("GIT_USE_LOCAL", None) != '1':
     repo = "https+webdav://ekstera.eit.uni-kl.de/bazaar/development/common/buildsys/"
 else:
-    repo_root = os.environ.get("BZR_COMMON_ROOT")
+    repo_root = os.environ.get("GIT_COMMON_ROOT")
     print(repo_root)
-    repo = os.path.join(repo_root, "buildsys")
+    repo = repo_root + "buildsys"
     print(repo)
 
-os.system("bzr branch " + repo + " buildsys -r " + tag)
+os.system("git clone " + repo + " buildsys")
+os.chdir("buildsys")
+os.system("git checkout " + tag)
 
