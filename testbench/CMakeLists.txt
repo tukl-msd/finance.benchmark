@@ -21,7 +21,7 @@ include_directories(${Boost_INCLUDE_DIR})
 
 add_executable(unit_test unit_test_benchmark.cpp)
 target_link_libraries(unit_test ${Boost_LIBRARIES})
-target_link_libraries(unit_test benchmark)
+target_link_libraries(unit_test heston_benchmark)
 
 add_test(unit_test ${CMAKE_CURRENT_BINARY_DIR}/unit_test 
 		--detect_memory_leaks=0)

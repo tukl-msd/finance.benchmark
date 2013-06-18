@@ -27,9 +27,9 @@ set(SOURCE
 	HestonBenchmark.cpp
 )
 
-add_library(benchmark STATIC ${SOURCE} ${HEADERS})
+add_library(heston_benchmark STATIC ${SOURCE} ${HEADERS})
 
 INSTALL(FILES ${HEADERS} DESTINATION include)
-INSTALL(TARGETS benchmark
+INSTALL(TARGETS heston_benchmark
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
