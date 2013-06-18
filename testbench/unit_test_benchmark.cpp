@@ -34,23 +34,6 @@ BOOST_AUTO_TEST_CASE(Test1) {
 	HestonPricer pricer;
 	HestonBenchmark benchmark(&pricer);
 
-	BOOST_CHECK(!benchmark.RunAll());
-}
-
-
-BOOST_AUTO_TEST_CASE(Test2) {
-	//BOOST_CHECK(8 == 9);
-	// BOOST_CHECK_EQUAL(fout.read(), 5);
-	// test 2
-}
-
-BOOST_AUTO_TEST_CASE(Test3) {
-	// test 3
-	// BOOST_CHECK(test(3) == 9);
-}
-
-BOOST_AUTO_TEST_CASE(Test4) {
-	// test 4
-	// BOOST_CHECK(test(4) == 16);
+	BOOST_CHECK(benchmark.RunAll());
 }
 

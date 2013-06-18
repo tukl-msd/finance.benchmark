@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <stdexcept>
 
 namespace Finance
 {
@@ -69,7 +70,7 @@ bool HestonBenchmark::RunSingleSet(unsigned int benchmark_set)
 	auto t2 = std::chrono::high_resolution_clock::now();
 
 	if (res_set->size() != set->size())
-		throw std::exception("Returned to few results");
+		throw std::runtime_error("Returned to few results");
 
 	std::cout << "Benchmark " << benchmark_set << " took " <<
 		std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() /
