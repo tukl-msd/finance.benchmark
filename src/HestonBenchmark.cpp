@@ -366,27 +366,7 @@ HestonBenchmarkSetPtr HestonBenchmark::GetBenchmarkSet(unsigned int benchmark_se
 		break;
 
 	default:
-		set.params.market.AssetSpotPrice = 100;
-		set.params.market.ModelRevertionRate = 2;
-		set.params.market.LongTermAverageVolatility = 0.09;
-		set.params.market.VolatilityOfVolatility = 1;
-		set.params.market.RisklessInterestRate = 0.05;
-		set.params.market.CurrentVolatility = 0.09;
-		set.params.market.Correlation = -0.3;
-		set.params.option.TimeToMaturity = 5;
-		set.params.option.StrikePrice = 100;
-		//set.params.option.LowerBarrier.Value = 90;
-		//set.params.option.UpperBarrier.Value = 110;
-		set.params.option.LowerBarrier.Type = kInvalid;
-		set.params.option.UpperBarrier.Type = kInvalid;
-		set.params.option.Type = kCall;
-
-		set.reference.Price = 34.9998;
-		set.reference.PricePrecision = 0.0001;
-
-		std::cout << "False input!" << std::endl << 
-				"Falling back to default parameters: benchmark set 1!" << 
-				std::endl;
+		throw std::runtime_error("Unknown benchmark set");
 		break;
 	}
 
