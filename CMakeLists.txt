@@ -10,7 +10,7 @@
 #
 
 cmake_minimum_required(VERSION 2.8)
-project(de.uni-kl.eit.ems.finance.heston.reference_models.benchmark)
+project(finance.pricingbenchmark)
 
 include(buildsys/CMakeShared.txt)
 
