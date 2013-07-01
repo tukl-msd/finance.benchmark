@@ -1,0 +1,77 @@
+cmake_minimum_required(VERSION 2.8.3)
+
+# add path to custom FindXXX.cmake modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/")
+
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+   message(SEND_ERROR "In-source builds are not allowed.\nPlease run the following commands:\n\t(del/rm) CMakeCache.txt\n\tmkdir cmakebuild\n\tcd cmakebuild\n\tcmake ..\nPlease ensure that \"cmakebuild\" is in the Bazaar ignore list.")
+endif()
+
+# Set Build type to release if none is given
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug Release." FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+# Compiler options for MSVC
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "/arch:SSE2 /EHsc")
+  add_definitions(-DXML_LIBRARY)
+endif(MSVC)
+
+# Compiler and linker options for gcc
+if(CMAKE_COMPILER_IS_GNUCXX)
+  # C code compiler
+  set(CMAKE_C_FLAGS "-Wall")	
+  set(CMAKE_C_FLAGS_RELEASE "-O3 -march=nocona -mmmx -msse -msse2 -msse3 -mfpmath=sse -fomit-frame-pointer -fstrict-aliasing -momit-leaf-frame-pointer -fno-tree-pre -falign-loops -ftree-vectorize")
+  set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -fno-inline")
+  set(CMAKE_C_FLAGS_PROF "-pg -O3 -march=nocona -mmmx -msse -msse2 -msse3 -mfpmath=sse -fstrict-aliasing -momit-leaf-frame-pointer -fno-tree-pre -falign-loops -ftree-vectorize")
+  
+  # C++ code compiler
+  set(CMAKE_CXX_FLAGS "-Wall")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=nocona -mmmx -msse -msse2 -msse3 -mfpmath=sse -fomit-frame-pointer -fstrict-aliasing -momit-leaf-frame-pointer -fno-tree-pre -falign-loops -ftree-vectorize")
+  #set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=nocona -mmmx -msse -msse2 -msse3 -mfpmath=sse -fomit-frame-pointer -fstrict-aliasing -momit-leaf-frame-pointer -fno-tree-pre -falign-loops -ftree-vectorize -ftree-vectorizer-verbose=9")
+  set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -fno-inline")
+  set(CMAKE_CXX_FLAGS_PROF "-pg -O3 -march=nocona -mmmx -msse -msse2 -msse3 -mfpmath=sse -fstrict-aliasing -momit-leaf-frame-pointer -fno-tree-pre -falign-loops -ftree-vectorize")
+  
+  # Linker
+  set(CMAKE_EXE_LINKER_FLAGS "")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-static-libgcc")
+  
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+# Enable It++ support with CMAKE variable ITPP_SUPPORT exists (is true)
+IF(ITPP_SUPPORT)
+  add_definitions(-DITPP_SUPPORT)
+ENDIF(ITPP_SUPPORT)
+
+#Usage: include_library(<relative path to library dir> <unique subdirectory in binary folder>
+#Example: include_library(../lib1 lib1)
+macro(include_library RELPATH BINPATH)
+	include_directories(${RELPATH})
+	ADD_SUBDIRECTORY(${RELPATH} ${BINPATH})
+endmacro(include_library) 
+
+set (EXTERNAL_LIB_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../../external)
+
+macro(include_ftdi_library)
+	add_library(ftd2xx UNKNOWN IMPORTED)
+	if (WIN32)
+		set_target_properties(ftd2xx PROPERTIES IMPORTED_LOCATION "${EXTERNAL_LIB_LOCATION}/usbfpga/DRIVERS+LIBS/i386/ftd2xx.lib")
+	ELSE(WIN32)
+		message(SEND_ERROR "ftd2xx library is not supported on Linux. Please read FTDI documentation about building it.")
+	ENDIF(WIN32)
+	
+	#find_library(ftd2xx NAME "ftd2xx.lib" PATHS "${EXTERNAL_LIB_LOCATION}/usbfpga/DRIVERS+LIBS/i386")
+endmacro(include_ftdi_library)
+
+# add a target to generate API documentation with Doxygen
+macro(add_doxygen_support PATH_TO_DOXYFILE)
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+add_custom_target(doc
+${DOXYGEN_EXECUTABLE} ${PATH_TO_DOXYFILE}/Doxyfile
+WORKING_DIRECTORY ${SRC_TOP_DIR}
+COMMENT "Generating API documentation with Doxygen" VERBATIM
+)
+endif(DOXYGEN_FOUND)
+endmacro(add_doxygen_support)
