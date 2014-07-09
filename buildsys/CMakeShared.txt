@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.3)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/")
 
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-   message(SEND_ERROR "In-source builds are not allowed.\nPlease run the following commands:\n\t(del/rm) CMakeCache.txt\n\tmkdir cmakebuild\n\tcd cmakebuild\n\tcmake ..\nPlease ensure that \"cmakebuild\" is in the Bazaar ignore list.")
+   message(SEND_ERROR "In-source builds are not allowed.\nPlease run the following commands:\n\t(del/rm) CMakeCache.txt\n\tmkdir cmakebuild\n\tcd cmakebuild\n\tcmake ..\nPlease ensure that \"cmakebuild\" is in the Git ignore list.")
 endif()
 
 # Set Build type to release if none is given

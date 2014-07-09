@@ -15,7 +15,7 @@ include_directories(.)
 include_directories(../src)
 
 ### Boost library ###
-find_package(Boost 1.44 COMPONENTS unit_test_framework REQUIRED)
+find_package(Boost 1.41 COMPONENTS unit_test_framework REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 #####################
 

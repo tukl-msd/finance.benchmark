@@ -12,7 +12,7 @@
 include_directories(.)
 
 ### Boost library ###
-find_package(Boost 1.44)
+find_package(Boost 1.41)
 include_directories(${Boost_INCLUDE_DIR})
 #####################
 
