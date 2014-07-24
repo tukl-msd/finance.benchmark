@@ -1,0 +1,13 @@
+{{extend 'layout.html'}}
+<!-- Nav tabs -->
+<ul id="adminPanel" class="nav nav-tabs">
+    <li class="active"><a href="#benchmark" data-toggle="tab">{{=T('Benchmark')}}</a></li>
+    <li><a href="#algorithm" data-toggle="tab">{{=T('Algorithm')}}</a></li>
+</ul>
+<!-- Tab panes -->
+<div id="adminPanelContent" class="tab-content">
+    <div class="tab-pane active" id="benchmark">...Benchmark...</div>
+    <div class="tab-pane" id="algorithm">...Alg...</div>
+</div>
+
+{{=BEAUTIFY(response._vars)}}

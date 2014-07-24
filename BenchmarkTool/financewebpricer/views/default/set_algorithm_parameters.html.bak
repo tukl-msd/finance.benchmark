@@ -1,0 +1,4 @@
+{{extend 'layout.html'}}
+<h1>{{T('Please set algorithm parameters')}}</h1>
+{{=algorithm_parameters_form}}
+{{=response.toolbar()}}

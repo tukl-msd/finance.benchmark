@@ -1,0 +1,3 @@
+{{extend 'layout.html'}}
+{{=simulation_form}}
+{{=BEAUTIFY(form.vars)}}

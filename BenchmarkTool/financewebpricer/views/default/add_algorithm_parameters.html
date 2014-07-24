@@ -1,0 +1,6 @@
+{{extend 'layout.html'}}
+<h2>{{=T('Algorithm Parameters')}}</h2>
+<h3>{{=T('Existing Parameters')}}</h3>
+{{=SQLTABLE(alg_param, headers=alg_param_headers)}}
+{{=alg_param_form}}
+{{=response.toolbar()}}

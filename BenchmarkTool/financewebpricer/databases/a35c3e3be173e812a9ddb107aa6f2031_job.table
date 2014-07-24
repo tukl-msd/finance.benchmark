@@ -1,0 +1,116 @@
+(dp1
+S'username'
+p2
+(dp3
+S'sortable'
+p4
+I2
+sS'sql'
+p5
+S'INT, INDEX username__idx (username), FOREIGN KEY (username) REFERENCES auth_user (id) ON DELETE CASCADE'
+p6
+sS'length'
+p7
+I512
+sS'notnull'
+p8
+I00
+sS'unique'
+p9
+I00
+sS'type'
+p10
+S'reference auth_user'
+p11
+ssS'market_parameters'
+p12
+(dp13
+g4
+I4
+sg5
+S'INT, INDEX market_parameters__idx (market_parameters), FOREIGN KEY (market_parameters) REFERENCES market_parameters (id) ON DELETE CASCADE'
+p14
+sg7
+I512
+sg8
+I00
+sg9
+I00
+sg10
+S'reference market_parameters'
+p15
+ssS'option_parameters'
+p16
+(dp17
+g4
+I5
+sg5
+S'INT, INDEX option_parameters__idx (option_parameters), FOREIGN KEY (option_parameters) REFERENCES option_parameters (id) ON DELETE CASCADE'
+p18
+sg7
+I512
+sg8
+I00
+sg9
+I00
+sg10
+S'reference option_parameters'
+p19
+ssS'compute_server'
+p20
+(dp21
+S'length'
+p22
+I512
+sS'unique'
+p23
+I00
+sS'sortable'
+p24
+I3
+sS'sql'
+p25
+S'INT, INDEX compute_server__idx (compute_server), FOREIGN KEY (compute_server) REFERENCES scheduler_worker (id) ON DELETE CASCADE'
+p26
+sS'notnull'
+p27
+I00
+sS'type'
+p28
+S'reference scheduler_worker'
+p29
+ssS'result_id'
+p30
+(dp31
+g4
+I6
+sg5
+S'INT, INDEX result_id__idx (result_id), FOREIGN KEY (result_id) REFERENCES numeric_results (id) ON DELETE CASCADE'
+p32
+sg7
+I512
+sg8
+I00
+sg9
+I00
+sg10
+S'reference numeric_results'
+p33
+ssS'id'
+p34
+(dp35
+g4
+I1
+sg5
+S'INT AUTO_INCREMENT NOT NULL'
+p36
+sg7
+I512
+sg8
+I00
+sg9
+I00
+sg10
+S'id'
+p37
+ss.

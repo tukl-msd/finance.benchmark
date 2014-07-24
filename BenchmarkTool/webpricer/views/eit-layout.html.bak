@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Limelight|Flamenco|Federo|Yesteryear|Josefin Sans|Spinnaker|Sansita One|Handlee|Droid Sans|Oswald:400,300,700" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/bootstrap.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/bootstrap-responsive.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/common.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/fontawesome.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/project.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="css/core.css" media="screen" rel="stylesheet" type="text/css" />
+    <!-- Typekit fonts require an account and a kit containing the fonts used. see https://typekit.com/plans for details. <script type="text/javascript" src="//use.typekit.net/YOUR_KIT_ID.js"></script>
+  <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+-->
+    <title>Core</title>
+  </head>
+
+  <body>
+    <div id="absolute-wrapper">
+      <div id="sidebar">
+        <ul id="menu" class="nav nav-stacked pull-left">
+          <li class="active firstactive">
+            <a class="a-1 a-2" href="#">Link</a>
+          </li>
+          <li class="active secondactive">
+            <a class="a-1 a-3" href="#">Link</a>
+          </li>
+          <li>
+            <a class="a-3 a-5" href="#">Link</a>
+          </li>
+          <li>
+            <a class="a-2 a-4" href="#">Link</a>
+          </li>
+          <li>
+            <a class="a-2 a-4" href="#">Link</a>
+          </li>
+          <li>
+            <a class="a-2 a-4" href="#">Link</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div id="banner" class="container-fluid header">
+      <img class="pull-center image" src="images/eit-banner.jpg">
+    </div>
+  </body>
+
+</html>

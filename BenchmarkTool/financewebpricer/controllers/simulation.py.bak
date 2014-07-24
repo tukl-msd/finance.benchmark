@@ -1,0 +1,6 @@
+# coding: utf8
+# try something like
+import heston_ml
+def index():
+    eval_set(bench_set=16, do_multi_level=True)
+    return dict(message=T('Funcionou'))

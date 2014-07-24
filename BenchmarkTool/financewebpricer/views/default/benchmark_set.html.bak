@@ -1,0 +1,7 @@
+{{extend 'layout.html'}}
+<h1>Set Benchmark</h1>
+{{=mkt_param}}
+{{=opt_param}}
+{{=algorithm}}
+{{=algorithm_parameters}}
+{{=response.toolbar()}}

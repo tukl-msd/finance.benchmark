@@ -1,0 +1,13 @@
+# coding: utf8
+
+def new_job():
+    import subprocess
+    output = subprocess.check_output(['python3','/home/cpnogueira/Downloads/pyheston/heston_web2py.py'])
+    results=output[1:-2].split(',')
+    db.numeric_results.insert(energy=results[0],runtime_value=results[3],price=results[1],precision_value=results[2])
+    
+def task_add(a,b):
+    return a+b
+
+from gluon.scheduler import Scheduler
+scheduler = Scheduler(db)

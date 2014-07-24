@@ -1,0 +1,275 @@
+timestamp: 2013-11-14T15:08:18.543074
+CREATE TABLE auth_user(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name CHAR(128),
+    last_name CHAR(128),
+    email CHAR(512),
+    password CHAR(512),
+    registration_key CHAR(512),
+    reset_password_key CHAR(512),
+    registration_id CHAR(512)
+);
+success!
+timestamp: 2013-11-14T15:08:18.682956
+CREATE TABLE auth_group(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2013-11-14T15:08:18.816947
+CREATE TABLE auth_membership(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2013-11-14T15:08:18.950143
+CREATE TABLE auth_permission(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE,
+    name CHAR(512),
+    table_name CHAR(512),
+    record_id INTEGER
+);
+success!
+timestamp: 2013-11-14T15:08:19.109230
+CREATE TABLE auth_event(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    time_stamp TIMESTAMP,
+    client_ip CHAR(512),
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    origin CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2013-11-14T15:08:19.286789
+CREATE TABLE auth_cas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    created_on TIMESTAMP,
+    service CHAR(512),
+    ticket CHAR(512),
+    renew CHAR(1)
+);
+success!
+timestamp: 2014-03-25T11:13:11.139052
+CREATE TABLE auth_user(
+    id INT AUTO_INCREMENT NOT NULL,
+    first_name VARCHAR(128),
+    last_name VARCHAR(128),
+    email VARCHAR(512),
+    username VARCHAR(128),
+    password VARCHAR(512),
+    registration_key VARCHAR(512),
+    reset_password_key VARCHAR(512),
+    registration_id VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:13:11.271333
+CREATE TABLE auth_group(
+    id INT AUTO_INCREMENT NOT NULL,
+    role VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:13:11.428131
+CREATE TABLE auth_membership(
+    id INT AUTO_INCREMENT NOT NULL,
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    group_id INT, INDEX group_id__idx (group_id), FOREIGN KEY (group_id) REFERENCES auth_group (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:13:11.627053
+CREATE TABLE auth_permission(
+    id INT AUTO_INCREMENT NOT NULL,
+    group_id INT, INDEX group_id__idx (group_id), FOREIGN KEY (group_id) REFERENCES auth_group (id) ON DELETE CASCADE,
+    name VARCHAR(512),
+    table_name VARCHAR(512),
+    record_id INT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:13:11.763679
+CREATE TABLE auth_event(
+    id INT AUTO_INCREMENT NOT NULL,
+    time_stamp DATETIME,
+    client_ip VARCHAR(512),
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    origin VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:13:11.896793
+CREATE TABLE auth_cas(
+    id INT AUTO_INCREMENT NOT NULL,
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    created_on DATETIME,
+    service VARCHAR(512),
+    ticket VARCHAR(512),
+    renew CHAR(1),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:34.913146
+CREATE TABLE scheduler_task(
+    id INT AUTO_INCREMENT NOT NULL,
+    application_name VARCHAR(512),
+    task_name VARCHAR(512),
+    group_name VARCHAR(512),
+    status VARCHAR(512),
+    function_name VARCHAR(512),
+    uuid VARCHAR(255) UNIQUE,
+    args LONGTEXT,
+    vars LONGTEXT,
+    enabled CHAR(1),
+    start_time DATETIME,
+    next_run_time DATETIME,
+    stop_time DATETIME,
+    repeats INT,
+    retry_failed INT,
+    period INT,
+    timeout INT,
+    sync_output INT,
+    times_run INT,
+    times_failed INT,
+    last_run_time DATETIME,
+    assigned_worker_name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.068306
+CREATE TABLE scheduler_run(
+    id INT AUTO_INCREMENT NOT NULL,
+    task_id INT, INDEX task_id__idx (task_id), FOREIGN KEY (task_id) REFERENCES scheduler_task (id) ON DELETE CASCADE,
+    status VARCHAR(512),
+    start_time DATETIME,
+    stop_time DATETIME,
+    run_output LONGTEXT,
+    run_result LONGTEXT,
+    traceback LONGTEXT,
+    worker_name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.202893
+CREATE TABLE scheduler_worker(
+    id INT AUTO_INCREMENT NOT NULL,
+    worker_name VARCHAR(255) UNIQUE,
+    first_heartbeat DATETIME,
+    last_heartbeat DATETIME,
+    status VARCHAR(512),
+    is_ticker CHAR(1),
+    group_names LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.317642
+CREATE TABLE algorithm(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(255) UNIQUE,
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.452889
+CREATE TABLE algorithm_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    description VARCHAR(512),
+    algorithm INT, INDEX algorithm__idx (algorithm), FOREIGN KEY (algorithm) REFERENCES algorithm (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.600477
+CREATE TABLE barrier(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.754523
+CREATE TABLE market_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    correlation DOUBLE,
+    long_run_variance DOUBLE,
+    speed_of_revertion DOUBLE,
+    volatility_of_volatility DOUBLE,
+    spot_price DOUBLE,
+    spot_volatility DOUBLE,
+    riskless_interest_rate DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:35.890855
+CREATE TABLE option_price(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:36.039432
+CREATE TABLE numeric_results(
+    id INT AUTO_INCREMENT NOT NULL,
+    energy DOUBLE,
+    runtime_value DOUBLE,
+    price DOUBLE,
+    precision_value DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:36.184188
+CREATE TABLE option_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    option_type INT, INDEX option_type__idx (option_type), FOREIGN KEY (option_type) REFERENCES option_price (id) ON DELETE CASCADE,
+    strike_price DOUBLE,
+    time_to_maturity DOUBLE,
+    lbarrier_type INT, INDEX lbarrier_type__idx (lbarrier_type), FOREIGN KEY (lbarrier_type) REFERENCES barrier (id) ON DELETE CASCADE,
+    lbarrier_value DOUBLE,
+    ubarrier_type INT, INDEX ubarrier_type__idx (ubarrier_type), FOREIGN KEY (ubarrier_type) REFERENCES barrier (id) ON DELETE CASCADE,
+    ubarrier_value DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:36.434395
+CREATE TABLE job(
+    id INT AUTO_INCREMENT NOT NULL,
+    username INT, INDEX username__idx (username), FOREIGN KEY (username) REFERENCES auth_user (id) ON DELETE CASCADE,
+    market_parameters INT, INDEX market_parameters__idx (market_parameters), FOREIGN KEY (market_parameters) REFERENCES market_parameters (id) ON DELETE CASCADE,
+    option_parameters INT, INDEX option_parameters__idx (option_parameters), FOREIGN KEY (option_parameters) REFERENCES option_parameters (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:36.789409
+CREATE TABLE benchmark_set(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(255) UNIQUE,
+    description LONGTEXT,
+    mkt_parameters INT, INDEX mkt_parameters__idx (mkt_parameters), FOREIGN KEY (mkt_parameters) REFERENCES market_parameters (id) ON DELETE CASCADE,
+    opt_parameters INT, INDEX opt_parameters__idx (opt_parameters), FOREIGN KEY (opt_parameters) REFERENCES option_parameters (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:14:36.987595
+CREATE TABLE simulation(
+    id INT AUTO_INCREMENT NOT NULL,
+    compute_server INT, INDEX compute_server__idx (compute_server), FOREIGN KEY (compute_server) REFERENCES scheduler_worker (id) ON DELETE CASCADE,
+    algorithm_id INT, INDEX algorithm_id__idx (algorithm_id), FOREIGN KEY (algorithm_id) REFERENCES algorithm (id) ON DELETE CASCADE,
+    job_id INT, INDEX job_id__idx (job_id), FOREIGN KEY (job_id) REFERENCES job (id) ON DELETE CASCADE,
+    result_id INT, INDEX result_id__idx (result_id), FOREIGN KEY (result_id) REFERENCES numeric_results (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-03-25T11:24:12.488537
+CREATE TABLE simulation_algorithm_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    simulation_id INT, INDEX simulation_id__idx (simulation_id), FOREIGN KEY (simulation_id) REFERENCES simulation (id) ON DELETE CASCADE,
+    algorithm_parameter_id INT, INDEX algorithm_parameter_id__idx (algorithm_parameter_id), FOREIGN KEY (algorithm_parameter_id) REFERENCES algorithm_parameters (id) ON DELETE CASCADE,
+    algorithm_parameter_value VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!

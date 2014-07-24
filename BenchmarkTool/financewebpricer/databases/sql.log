@@ -1,0 +1,242 @@
+timestamp: 2013-11-19T15:02:32.897011
+CREATE TABLE auth_user(
+    id INT AUTO_INCREMENT NOT NULL,
+    first_name VARCHAR(128),
+    last_name VARCHAR(128),
+    email VARCHAR(512),
+    password VARCHAR(512),
+    registration_key VARCHAR(512),
+    reset_password_key VARCHAR(512),
+    registration_id VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.034347
+CREATE TABLE auth_group(
+    id INT AUTO_INCREMENT NOT NULL,
+    role VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.182438
+CREATE TABLE auth_membership(
+    id INT AUTO_INCREMENT NOT NULL,
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    group_id INT, INDEX group_id__idx (group_id), FOREIGN KEY (group_id) REFERENCES auth_group (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.382567
+CREATE TABLE auth_permission(
+    id INT AUTO_INCREMENT NOT NULL,
+    group_id INT, INDEX group_id__idx (group_id), FOREIGN KEY (group_id) REFERENCES auth_group (id) ON DELETE CASCADE,
+    name VARCHAR(512),
+    table_name VARCHAR(512),
+    record_id INT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.526909
+CREATE TABLE auth_event(
+    id INT AUTO_INCREMENT NOT NULL,
+    time_stamp DATETIME,
+    client_ip VARCHAR(512),
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    origin VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.663293
+CREATE TABLE auth_cas(
+    id INT AUTO_INCREMENT NOT NULL,
+    user_id INT, INDEX user_id__idx (user_id), FOREIGN KEY (user_id) REFERENCES auth_user (id) ON DELETE CASCADE,
+    created_on DATETIME,
+    service VARCHAR(512),
+    ticket VARCHAR(512),
+    renew CHAR(1),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.813124
+CREATE TABLE algorithm(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:33.947187
+CREATE TABLE algorithm_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    description VARCHAR(512),
+    algorithm INT, INDEX algorithm__idx (algorithm), FOREIGN KEY (algorithm) REFERENCES algorithm (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.079323
+CREATE TABLE barrier(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.225640
+CREATE TABLE compute_server(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    address VARCHAR(512),
+    description LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.366103
+CREATE TABLE market_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    correlation DOUBLE,
+    long_run_variance DOUBLE,
+    speed_of_revertion DOUBLE,
+    volatility_of_volatility DOUBLE,
+    spot_price DOUBLE,
+    spot_volatility DOUBLE,
+    riskless_interest_rate DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.494807
+CREATE TABLE option_price(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.636215
+CREATE TABLE numeric_results(
+    id INT AUTO_INCREMENT NOT NULL,
+    energy DOUBLE,
+    runtime_value DOUBLE,
+    price DOUBLE,
+    precision_value DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:34.796134
+CREATE TABLE option_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    option_type INT, INDEX option_type__idx (option_type), FOREIGN KEY (option_type) REFERENCES option_price (id) ON DELETE CASCADE,
+    strike_price DOUBLE,
+    time_to_maturity DOUBLE,
+    lower_barrier CHAR(1),
+    lbarrier_type INT, INDEX lbarrier_type__idx (lbarrier_type), FOREIGN KEY (lbarrier_type) REFERENCES barrier (id) ON DELETE CASCADE,
+    lbarrier_value DOUBLE,
+    upper_barrier CHAR(1),
+    ubarrier_type INT, INDEX ubarrier_type__idx (ubarrier_type), FOREIGN KEY (ubarrier_type) REFERENCES barrier (id) ON DELETE CASCADE,
+    ubarrier_value DOUBLE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:35.059287
+CREATE TABLE job(
+    id INT AUTO_INCREMENT NOT NULL,
+    username INT, INDEX username__idx (username), FOREIGN KEY (username) REFERENCES auth_user (id) ON DELETE CASCADE,
+    compute_server INT, INDEX compute_server__idx (compute_server), FOREIGN KEY (compute_server) REFERENCES compute_server (id) ON DELETE CASCADE,
+    market_parameters INT, INDEX market_parameters__idx (market_parameters), FOREIGN KEY (market_parameters) REFERENCES market_parameters (id) ON DELETE CASCADE,
+    option_parameters INT, INDEX option_parameters__idx (option_parameters), FOREIGN KEY (option_parameters) REFERENCES option_parameters (id) ON DELETE CASCADE,
+    result_id INT, INDEX result_id__idx (result_id), FOREIGN KEY (result_id) REFERENCES numeric_results (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-19T15:02:35.423565
+CREATE TABLE job_algorithm_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    job_num INT, INDEX job_num__idx (job_num), FOREIGN KEY (job_num) REFERENCES job (id) ON DELETE CASCADE,
+    algorithm_parameters INT, INDEX algorithm_parameters__idx (algorithm_parameters), FOREIGN KEY (algorithm_parameters) REFERENCES algorithm_parameters (id) ON DELETE CASCADE,
+    aparameters_value VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2013-11-20T22:47:27.888911
+ALTER TABLE auth_user ADD username VARCHAR(128);
+success!
+success!
+timestamp: 2013-12-22T19:15:38.228777
+ALTER TABLE algorithm ADD name__tmp VARCHAR(512) UNIQUE;
+timestamp: 2013-12-22T19:18:28.936637
+ALTER TABLE algorithm ADD name__tmp VARCHAR(255) UNIQUE;
+success!
+UPDATE algorithm SET name__tmp=name;
+timestamp: 2014-01-13T12:58:39.230891
+CREATE TABLE scheduler_task(
+    id INT AUTO_INCREMENT NOT NULL,
+    application_name VARCHAR(512),
+    task_name VARCHAR(512),
+    group_name VARCHAR(512),
+    status VARCHAR(512),
+    function_name VARCHAR(512),
+    uuid VARCHAR(255) UNIQUE,
+    args LONGTEXT,
+    vars LONGTEXT,
+    enabled CHAR(1),
+    start_time DATETIME,
+    next_run_time DATETIME,
+    stop_time DATETIME,
+    repeats INT,
+    retry_failed INT,
+    period INT,
+    timeout INT,
+    sync_output INT,
+    times_run INT,
+    times_failed INT,
+    last_run_time DATETIME,
+    assigned_worker_name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-01-13T12:58:39.394062
+CREATE TABLE scheduler_run(
+    id INT AUTO_INCREMENT NOT NULL,
+    task_id INT, INDEX task_id__idx (task_id), FOREIGN KEY (task_id) REFERENCES scheduler_task (id) ON DELETE CASCADE,
+    status VARCHAR(512),
+    start_time DATETIME,
+    stop_time DATETIME,
+    run_output LONGTEXT,
+    run_result LONGTEXT,
+    traceback LONGTEXT,
+    worker_name VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-01-13T12:58:39.525071
+CREATE TABLE scheduler_worker(
+    id INT AUTO_INCREMENT NOT NULL,
+    worker_name VARCHAR(255) UNIQUE,
+    first_heartbeat DATETIME,
+    last_heartbeat DATETIME,
+    status VARCHAR(512),
+    is_ticker CHAR(1),
+    group_names LONGTEXT,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-01-13T15:44:43.947195
+CREATE TABLE benchmark_set(
+    id INT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(255) UNIQUE,
+    description LONGTEXT,
+    mkt_parameters INT, INDEX mkt_parameters__idx (mkt_parameters), FOREIGN KEY (mkt_parameters) REFERENCES market_parameters (id) ON DELETE CASCADE,
+    opt_parameters INT, INDEX opt_parameters__idx (opt_parameters), FOREIGN KEY (opt_parameters) REFERENCES option_parameters (id) ON DELETE CASCADE,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+timestamp: 2014-01-13T15:44:44.144404
+CREATE TABLE bench_alg_parameters(
+    id INT AUTO_INCREMENT NOT NULL,
+    bench_id INT, INDEX bench_id__idx (bench_id), FOREIGN KEY (bench_id) REFERENCES benchmark_set (id) ON DELETE CASCADE,
+    algorithm_parameters INT, INDEX algorithm_parameters__idx (algorithm_parameters), FOREIGN KEY (algorithm_parameters) REFERENCES algorithm_parameters (id) ON DELETE CASCADE,
+    aparameters_value VARCHAR(512),
+    PRIMARY KEY(id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+success!
+success!

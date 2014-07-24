@@ -1,0 +1,323 @@
+"""
+Copyright (C) 2013 University of Kaiserslautern
+Microelectronic Systems Design Research Group
+
+This file is part of the financial mathematics research project
+de.uni-kl.eit.ems.finance
+
+Christian Brugger (brugger@eit.uni-kl.de)
+17. January 2013
+"""
+from gluon import *
+
+import sys
+
+import time
+
+import numpy as np
+
+import heston_benchmark as heston_benchmark
+import helper as helper
+import mpipool as mpipool
+
+#TODO(brugger): write proper seed method based on multiprocessing.pool initializer
+
+
+#np.random.seed(0)
+
+
+class SimMLParams():
+    # multy level parameters
+    ml_l_start = 1 # integer, start level
+    ml_constant = 4 # integer, how much more levels are on finer level
+    ml_path_cnt_start = 10**4 # intepreted as integer, how many paths are simulated on first level
+    ml_epsilon = 2 * 10**-2 # positive real, the required accuracy
+
+class SimSLParams():
+    # single level parameters
+    path_cnt = 100000 # interpreted as integer
+    step_cnt = 256 # interpreted as integer
+
+
+# continuity correction, see Broadie, Glasserman, Kou (1997)
+BARRIER_HIT_CORRECTION = 0.5826
+
+# memory limit, how many paths should be calculated in parallel
+MAX_PATHS_PER_RUN = 1E6
+
+def add_mean(x_cnt, x_mean, y_cnt, y_mean):
+    return 0
+
+def add_var(x_cnt, x_mean, y_cnt, y_mean):
+    return 0
+
+def multi_level_mc(params, sim, return_costs=False):
+    current_level = 0
+    first_iteration_on_level = True
+    path_cnt_done = []
+    path_cnt_opt = []
+    mean = []
+    variance = []
+    def get_step_cnt(ml_level):
+        return sim.ml_constant ** (ml_level + sim.ml_l_start)
+    while True:
+        if first_iteration_on_level:
+            path_cnt_opt.append(sim.ml_path_cnt_start)
+            path_cnt_done.append(0)
+            mean.append(0)
+            variance.append(0)
+
+        for level in range(current_level + 1):
+            path_cnt_todo = (path_cnt_opt[level] -
+                    path_cnt_done[level])
+            if path_cnt_todo > 0:
+                path_cnt = path_cnt_todo
+                step_cnt = get_step_cnt(level)
+                print("current_level {} level {} step_cnt {} path_cnt {}".format(
+                        current_level, level, step_cnt, path_cnt))
+                new_mean, new_variance = multi_level_mc_kernel(params, step_cnt, 
+                        path_cnt, multilevel=(level > 0), 
+                        ml_constant=sim.ml_constant)
+                # update variance and mean
+                mean[level], variance[level], path_cnt_done[level] = \
+                        helper.add_mean_variance(
+                        mean[level], variance[level], path_cnt_done[level],
+                        new_mean, new_variance, path_cnt)
+                print("{{mean: {}, variance: {}, cnt: {}}}".format(new_mean,
+                        new_variance, path_cnt))
+                print("{{mean: {}, variance: {}, cnt: {}}}".format(mean[level],
+                        variance[level], path_cnt_done[level]))
+
+        if first_iteration_on_level:
+            first_iteration_on_level = False
+            for l in range(current_level + 1):
+                path_cnt_opt[l] = np.ceil(2 * sim.ml_epsilon**-2 * sum(np.sqrt(
+                        variance[i] / (params.time_to_maturity / get_step_cnt(i)))
+                        for i in range(current_level + 1)) * np.sqrt(variance[l] *
+                        (params.time_to_maturity / get_step_cnt(l))))
+        else:
+            if (current_level > 2) and max(sim.ml_constant**(-1) *
+                    abs(mean[current_level - 1]), (mean[current_level])) < \
+                    sim.ml_epsilon / np.sqrt(2) * (sim.ml_constant - 1):
+                break
+            current_level += 1
+            first_iteration_on_level = True
+        print(path_cnt_opt)
+    
+    price = sum(mean) * np.exp(-params.riskless_rate * params.time_to_maturity)
+    if return_costs:
+        def calc_costs(path_cnt):
+            return sum(path_cnt[level] * get_step_cnt(level) *  
+                   (1 + 1./sim.ml_constant if level > 0 else 1)
+                   for level in range(len(path_cnt)))
+        return price, calc_costs(path_cnt_opt), calc_costs(path_cnt_done)
+    else:
+        return price
+
+
+def multi_level_sl(params, sim):
+    mean, variance = multi_level_mc_kernel(params, sim.step_cnt, 
+                sim.path_cnt, multilevel=False)
+    return mean * np.exp(-params.riskless_rate * params.time_to_maturity)
+  
+
+def multi_level_mc_kernel(params, step_cnt, path_cnt, 
+        multilevel, ml_constant=2):
+    if mpipool.pool is not None and step_cnt * path_cnt > 10**4:
+        cnt = mpipool.pool.get_size()
+        path_cnts = [int(path_cnt // cnt) + (1 if i < path_cnt % cnt else 0)
+                for i in range(cnt)]
+        seed0 = helper.get_rand_uint_32()
+        seed = [seed0 + i for i in range(cnt)]
+        results = mpipool.pool.map(multi_level_mc_kernel_local,
+                (params,)*cnt, (step_cnt,)*cnt, path_cnts,
+                (multilevel,)*cnt, (ml_constant,)*cnt, seed)
+        mean, variance, path_cnt_done = 0, 0, 0
+        for res, path_cnt in zip(results, path_cnts):
+            mean, variance, path_cnt_done = helper.add_mean_variance(
+                    mean, variance, path_cnt_done, res[0], res[1], path_cnt)
+        return mean, variance
+    else:
+        return multi_level_mc_kernel_local(params, step_cnt, path_cnt, 
+        multilevel, ml_constant)
+
+
+def multi_level_mc_kernel_local(params, step_cnt, path_cnt, 
+        multilevel, ml_constant=2, seed=None):
+    path_cnt_todo = path_cnt
+    # accumulate return values
+    mean, variance, cnt_done = 0, 0, 0
+    while path_cnt_todo > 0:
+        curr_path_cnt = min(path_cnt_todo, MAX_PATHS_PER_RUN)
+        path_cnt_todo -= curr_path_cnt
+        new_res = multi_level_mc_kernel_local_partial(params, step_cnt, 
+                curr_path_cnt, multilevel, ml_constant, seed)
+        mean, variance, cnt_done = helper.update_mean_variance(
+                mean, variance, cnt_done, new_res)
+    return mean, variance
+
+
+def multi_level_mc_kernel_local_partial(params, step_cnt, path_cnt, 
+        multilevel, ml_constant=2, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    step_size_fine = params.time_to_maturity / step_cnt
+    stock_fine = np.ones(path_cnt) * np.log(params.spot_price)
+    vola_fine = np.ones(path_cnt) * params.vola_0
+    # barrier
+    if len(params.barriers) > 0:
+        barrier_hit_fine = np.zeros(path_cnt, dtype=bool)
+    else:
+        barrier_hit_fine = None
+    # integral for asian options
+    if params.option_type == heston_benchmark.OPTION_TYPE_CALL_ASIAN:
+        integral_fine = np.ones(path_cnt) * (params.spot_price / 2 * 
+                step_size_fine)
+    else:
+        integral_fine = None
+
+    if multilevel:
+        step_size_coarse = step_size_fine * ml_constant
+        stock_coarse = np.ones(path_cnt) * np.log(params.spot_price)
+        vola_coarse = np.ones(path_cnt) * params.vola_0
+        # barrier
+        if len(params.barriers) > 0:
+            barrier_hit_coarse = np.zeros(path_cnt, dtype=bool)
+        else:
+            barrier_hit_coarse = None
+        # integral for asian options
+        if params.option_type == heston_benchmark.OPTION_TYPE_CALL_ASIAN:
+            integral_coarse = np.ones(path_cnt) * (params.spot_price / 2 *
+                    step_size_coarse)
+        else:
+            integral_coarse = None
+        w_acc = np.zeros((2, path_cnt)) # accumulated
+
+    r = params.correlation
+    mat_corr = np.array([
+        [1,         0      ],
+        [r, np.sqrt(1-r**2)]])
+    for i in range(1, step_cnt + 1):
+        # generate correlated random numbers
+        w_pure = np.sqrt(step_size_fine) * np.random.normal(0, 1,
+                (2, np.ceil(path_cnt/2)))
+        w_corr = mat_corr.dot(w_pure)
+        w_anti = np.append(w_corr, -w_corr, axis=1)[:,:path_cnt]
+        if multilevel:
+            w_acc += w_anti
+
+        def step(stock, vola, w, barrier_hit, integral, step_size):
+            max_vola = np.maximum(0, vola)
+            sqrt_vola = np.sqrt(max_vola)
+            
+            stock += ((params.riskless_rate - 0.5 * max_vola) *
+                    step_size + sqrt_vola * w[0])
+            vola += (params.reversion_rate * step_size * 
+                    (params.long_term_avg_vola - max_vola) + 
+                    params.vol_of_vol * sqrt_vola * w[1])
+            
+            # barrier correction
+            if barrier_hit is not None:
+                barrier_correction = (BARRIER_HIT_CORRECTION * 
+                        np.sqrt(step_size) * sqrt_vola)
+                for barrier in params.barriers:
+                    if barrier.value > params.spot_price:
+                        # upper barrier
+                        barrier_hit |= (stock > np.log(barrier.value) - 
+                                barrier_correction)
+                    else:
+                        # lower barrier
+                        barrier_hit |= (stock < np.log(barrier.value) +
+                                barrier_correction)
+
+            # calculate integral for asian options
+            if integral is not None:
+                weight = 0.5 if i == step_cnt else 1
+                integral += weight * step_size * np.exp(stock)
+        
+        # step fine path
+        step(stock_fine, vola_fine, w_anti, barrier_hit_fine, integral_fine, 
+                step_size_fine)
+
+        # step coarse path every (ml_constant) iteratons
+        if (multilevel and (i % ml_constant == 0)):
+            step(stock_coarse, vola_coarse, w_acc, barrier_hit_coarse,
+                     integral_coarse, step_size_coarse)
+            w_acc = np.zeros((2, path_cnt))
+
+    def calc_payoff(stock, barrier_hit, integral):
+        if params.option_type == heston_benchmark.OPTION_TYPE_CALL:
+            payoff = np.maximum(0, np.exp(stock) - params.strike_price)
+        elif params.option_type == heston_benchmark.OPTION_TYPE_PUT:
+            payoff = np.maximum(0, params.strike_price - np.exp(stock))
+        elif params.option_type == heston_benchmark.OPTION_TYPE_CALL_DIGITAL:
+            payoff = np.zeros(path_cnt)
+            payoff[np.exp(stock) > params.strike_price] = 1
+        elif params.option_type == heston_benchmark.OPTION_TYPE_CALL_ASIAN:
+            payoff = np.maximum(0, integral / params.time_to_maturity - 
+                    params.strike_price)
+        else:
+            raise Exception("Option type unknown")
+        if barrier_hit is not None:
+            barrier_types = set([barrier.type for barrier in params.barriers])
+            if len(barrier_types) > 1:
+                raise Exception("Only one type of barrier supported so far")
+            barrier_type = barrier_types.pop()
+            if barrier_type == heston_benchmark.BARRIER_TYPE_KNOCK_OUT:
+                payoff[barrier_hit] = 0
+            elif barrier_type == heston_benchmark.BARRIER_TYPE_KNOCK_IN:
+                if len(params.barriers) > 1:
+                    raise Exception("Only one knock out barrier supported")
+                payoff[np.logical_not(barrier_hit)] = 0
+            else:
+                raise Exception("Unknown barrier type")
+        return payoff
+
+    res_fine = calc_payoff(stock_fine, barrier_hit_fine, integral_fine)
+    if multilevel:
+        res_coarse = calc_payoff(stock_coarse, barrier_hit_coarse, 
+                integral_coarse)
+        return res_fine - res_coarse
+    else:
+        return res_fine
+
+
+
+def eval_ml(params):
+    sim_params = SimMLParams()
+    return multi_level_mc(params, sim_params)
+
+
+def eval_sl(params):
+    sim_params = SimSLParams()
+    return multi_level_sl(params, sim_params)
+
+
+def eval_set(bench_set, do_multi_level):
+    params = heston_benchmark.BenchmarkParams(bench_set)
+    
+    t1 = time.monotonic()
+    result = (eval_ml if do_multi_level else eval_sl)(params)
+    t2 = time.monotonic()
+    
+    print("Benchmark set {}, ".format(bench_set, "multi-level" 
+            if do_multi_level else "single-level"))
+    print("Result = {}".format(result))
+    print("Ref    = {}".format(params.ref_price))
+    print("Prec   = {}".format(np.abs(result/params.ref_price - 1)))
+    print("Time   = {} seconds".format(t2 - t1))
+    print()
+
+
+def main():
+    eval_set(bench_set=16, do_multi_level=True)
+    return
+
+    for i in range(1, 13+1):
+        eval_set(bench_set=i, do_multi_level=False)
+        eval_set(bench_set=i, do_multi_level=True)
+
+
+if __name__ == "__main__":
+    #with mpipool.mpipool():
+        main()

@@ -1,0 +1,125 @@
+# coding: utf8
+from gluon.scheduler import Scheduler
+scheduler = Scheduler(db)
+
+# table definition
+db.define_table('algorithm',
+                Field('name', 'string',length=255,unique=True),
+                Field('description', 'text'),
+                format='%(name)s')
+
+db.define_table('algorithm_parameters',
+                Field('name','string'),
+                Field('description','string'),
+                Field('algorithm',db.algorithm),
+                format='%(name)s')
+
+db.define_table('barrier',
+                Field('name','string'),
+                format='%(name)s')
+
+db.define_table('market_parameters',
+                 Field('correlation', 'double'),
+                 Field('long_run_variance', 'double'),
+                 Field('speed_of_revertion', 'double'),
+                 Field('volatility_of_volatility', 'double'),
+                 Field('spot_price', 'double'),
+                 Field('spot_volatility', 'double'),
+                 Field('riskless_interest_rate', 'double'))
+
+db.define_table('option_price',
+                 Field('name', 'string'),
+                 format='%(name)s')
+
+db.define_table('numeric_results',
+                 Field('energy', 'double'),
+                 Field('runtime_value', 'double'),
+                 Field('price', 'double'),
+                 Field('precision_value', 'double'))
+
+db.define_table('option_parameters',
+                 Field('option_type', db.option_price, widget=SQLFORM.widgets.options.widget),
+                 Field('strike_price', 'double'),
+                 Field('time_to_maturity', 'double'),
+                 Field('lower_barrier', 'boolean'),
+                 Field('lbarrier_type', db.barrier, widget=SQLFORM.widgets.options.widget),
+                 Field('lbarrier_value', 'double'),
+                 Field('upper_barrier', 'boolean'),
+                 Field('ubarrier_type', db.barrier, widget=SQLFORM.widgets.options.widget),
+                 Field('ubarrier_value', 'double'))
+
+db.define_table('job',
+                 Field('username', db.auth_user),
+                 Field('compute_server', db.scheduler_worker),
+                 Field('market_parameters', db.market_parameters),
+                 Field('option_parameters', db.option_parameters),
+                 Field('result_id', db.numeric_results))
+
+db.define_table('job_algorithm_parameters',
+                 Field('job_num', db.job),
+                 Field('algorithm_parameters', db.algorithm_parameters),
+                 Field('aparameters_value','string'))
+
+db.define_table('benchmark_set',
+                Field('name','string',length=255,unique=True),
+                Field('description','text'),
+                Field('mkt_parameters',db.market_parameters),
+                Field('opt_parameters',db.option_parameters),
+                format='%(name)s')
+
+db.define_table('bench_alg_parameters',
+                Field('bench_id',db.benchmark_set),
+                Field('algorithm_parameters', db.algorithm_parameters),
+                Field('aparameters_value','string'))
+
+
+# Field requirements definition
+db.algorithm.name.requires = [IS_NOT_IN_DB(db, db.algorithm.name),IS_NOT_EMPTY()]
+
+db.algorithm_parameters.name.requires = IS_NOT_EMPTY()
+db.algorithm_parameters.algorithm.requires = [IS_IN_DB(db, db.algorithm.id, '%(name)s')]
+
+db.barrier.name.requires = IS_NOT_EMPTY()
+
+db.market_parameters.correlation.requires = [IS_NOT_EMPTY(),IS_FLOAT_IN_RANGE(-1,1)]
+db.market_parameters.long_run_variance.requires = [IS_NOT_EMPTY(),IS_FLOAT_IN_RANGE(-1,1)]
+db.market_parameters.speed_of_revertion.requires = [IS_NOT_EMPTY(),IS_EXPR('float(value)>0')]
+db.market_parameters.volatility_of_volatility.requires = [IS_NOT_EMPTY(),IS_EXPR('float(value)>0')]
+db.market_parameters.spot_price.requires = [IS_NOT_EMPTY(),IS_EXPR('float(value)>0')]
+db.market_parameters.spot_volatility.requires = [IS_NOT_EMPTY(),IS_EXPR('float(value)>0')]
+db.market_parameters.riskless_interest_rate.requires = [IS_NOT_EMPTY(),IS_EXPR('float(value)>0')]
+
+db.option_price.name.requires = [IS_NOT_IN_DB(db, db.option_price.name),IS_NOT_EMPTY()]
+
+db.option_parameters.option_type.requires = [IS_IN_DB(db, db.option_price.id, '%(name)s'),IS_NOT_EMPTY()]
+db.option_parameters.strike_price.requires = IS_NOT_EMPTY()
+db.option_parameters.time_to_maturity.requires = IS_NOT_EMPTY()
+db.option_parameters.lbarrier_type.requires = [IS_EMPTY_OR(IS_IN_DB(db, db.barrier.id, '%(name)s'))]
+db.option_parameters.ubarrier_type.requires = [IS_EMPTY_OR(IS_IN_DB(db, db.barrier.id, '%(name)s'))]
+
+
+db.job.username.requires = [IS_IN_DB(db, db.auth_user.id, '%(name)s'),IS_NOT_EMPTY()]
+db.job.compute_server.requires = [IS_IN_DB(db, db.scheduler_worker.id, '%(name)s'),IS_NOT_EMPTY()]
+db.job.market_parameters.requires = [IS_IN_DB(db, db.market_parameters.id),IS_NOT_EMPTY()]
+db.job.option_parameters.requires = [IS_IN_DB(db, db.option_parameters.id),IS_NOT_EMPTY()]
+db.job.result_id.requires = [IS_IN_DB(db, db.numeric_results.id),IS_NOT_EMPTY()]
+
+db.job_algorithm_parameters.job_num.requires = [IS_IN_DB(db, db.job.id),IS_NOT_EMPTY()]
+db.job_algorithm_parameters.algorithm_parameters.requires = [IS_IN_DB(db, db.algorithm_parameters.id, '%(name)s'),IS_NOT_EMPTY()]
+db.job_algorithm_parameters.aparameters_value.requires = IS_NOT_EMPTY()
+
+db.benchmark_set.mkt_parameters.requires = [IS_IN_DB(db, db.market_parameters.id),IS_NOT_EMPTY()]
+db.benchmark_set.opt_parameters.requires = [IS_IN_DB(db, db.option_parameters.id),IS_NOT_EMPTY()]
+
+db.bench_alg_parameters.bench_id.requires = [IS_IN_DB(db, db.benchmark_set.id),IS_NOT_EMPTY()]
+db.bench_alg_parameters.algorithm_parameters.requires = [IS_IN_DB(db, db.algorithm_parameters.id, '%(name)s'),IS_NOT_EMPTY()]
+db.bench_alg_parameters.aparameters_value.requires = IS_NOT_EMPTY()
+
+
+
+def new_job():
+    import subprocess
+    output = subprocess.check_output(['python3','/home/cpnogueira/Downloads/pyheston/heston_web2py.py'])
+    results=output[1:-2].split(',')
+    db.numeric_results.insert(energy=results[0],runtime_value=results[1],price=results[2],precision_value=results[3])
+    return results

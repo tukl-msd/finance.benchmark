@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta name="keywords" content="{{=response.keywords}}" />
+  <meta name="description" content="{{=response.description}}" />
+  <title>{{=response.title if response.title else request.application)}}</title>
+  <!--
+    <link href="{{=URL(r=request,c='static',f='eit_layout/stylesheets/bootstrap.css')}}" rel="stylesheet" type="text/css"/>
+  <link href="{{=URL(r=request,c='static',f='eit_layout/stylesheets/bootstrap_responsive.css')}}" rel="stylesheet" type="text/css"/>
+  <link href="{{=URL(r=request,c='static',f='eit_layout/stylesheets/common.css')}}" rel="stylesheet" type="text/css"/>
+  <link href="{{=URL(r=request,c='static',f='eit_layout/stylesheets/core.css')}}" rel="stylesheet" type="text/css"/>
+  <link href="{{=URL(r=request,c='static',f='eit_layout/stylesheets/fontawesome.css')}}" rel="stylesheet" type="text/css"/>
+  //-->
+  {{include 'web2py_ajax.html'}}
+</head>
+<body>
+
+<h1>Here goes the header, followed by the menu</h1>
+
+{{if response.menu:}}
+<div id="menu">
+<ul>
+  {{for _name,_active,_link in response.menu:}}
+    <li><a href="{{=_link}}" class="{{='active' if _active else 'inactive'}}">{{=_name}}</a></li>
+  {{pass}}
+</ul>
+</div>
+{{pass}}
+
+<h1>Here goes the flash message</h1>
+
+{{if response.flash:}}<div id="flash">{{=response.flash}}</div>{{pass}}
+
+<h1>Here goes the main (the view that extends this one)</h1>
+
+{{include}}
+
+<h1>... and here the footer</h1> 
+
+</body>
+</html>

@@ -1,0 +1,3 @@
+{{extend 'layout.html'}}
+<h1>This is the default/add_benchmark_set.html template</h1>
+{{=mkt_param}}

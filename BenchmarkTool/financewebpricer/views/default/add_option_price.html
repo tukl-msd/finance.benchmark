@@ -1,0 +1,5 @@
+{{extend 'layout.html'}}
+<h2>{{=T('Option Price')}}</h2>
+<h3>{{=T('Existing Option Prices')}}</h3>
+{{=SQLTABLE(opt_price, headers=opt_price_header)}}
+{{=opt_price_form}}
