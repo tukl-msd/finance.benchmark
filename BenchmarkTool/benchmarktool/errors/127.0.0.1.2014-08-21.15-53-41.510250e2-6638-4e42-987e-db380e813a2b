@@ -1,0 +1,560 @@
+(dp1
+S'output'
+p2
+S"<type 'exceptions.AttributeError'> 'Table' object has no attribute 'alg_param'"
+p3
+sS'layer'
+p4
+S'/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py'
+p5
+sS'code'
+p6
+S'# -*- coding: utf-8 -*-\n# this file is released under public domain and you can use without limitations\n\n#########################################################################\n## This is a sample controller\n## - index is the default action of any application\n## - user is required for authentication and authorization\n## - download is for downloading files uploaded in the db (does streaming)\n## - call exposes all registered services (none by default)\n#########################################################################\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\ndef index():\n    """\n    example action using the internationalization operator T and flash\n    rendered by views/default/index.html or views/generic.html\n\n    if you need a simple wiki simply replace the two lines below with:\n    return auth.wiki()\n    """\n    response.flash = T("Welcome to web2py!")\n    return dict(message=T(\'Hello World\'))\n\n\ndef user():\n    """\n    exposes:\n    http://..../[app]/default/user/login\n    http://..../[app]/default/user/logout\n    http://..../[app]/default/user/register\n    http://..../[app]/default/user/profile\n    http://..../[app]/default/user/retrieve_password\n    http://..../[app]/default/user/change_password\n    http://..../[app]/default/user/manage_users (requires membership in\n    use @auth.requires_login()\n        @auth.requires_membership(\'group name\')\n        @auth.requires_permission(\'read\',\'table name\',record_id)\n    to decorate functions that need access control\n    """\n    return dict(form=auth())\n\n@cache.action()\ndef download():\n    """\n    allows downloading of uploaded files\n    http://..../[app]/default/download/[filename]\n    """\n    return response.download(request, db)\n\n\ndef call():\n    """\n    exposes services. for example:\n    http://..../[app]/default/call/jsonrpc\n    decorate with @services.jsonrpc the functions to expose\n    supports xml, json, xmlrpc, jsonrpc, amfrpc, rss, csv\n    """\n    return service()\n\n\n@auth.requires_signature()\ndef data():\n    """\n    http://..../[app]/default/data/tables\n    http://..../[app]/default/data/create/[table]\n    http://..../[app]/default/data/read/[table]/[id]\n    http://..../[app]/default/data/update/[table]/[id]\n    http://..../[app]/default/data/delete/[table]/[id]\n    http://..../[app]/default/data/select/[table]\n    http://..../[app]/default/data/search/[table]\n    but URLs must be signed, i.e. linked with\n      A(\'table\',_href=URL(\'data/tables\',user_signature=True))\n    or with the signed load operator\n      LOAD(\'default\',\'data.load\',args=\'tables\',ajax=True,user_signature=True)\n    """\n    return dict(form=crud())\n\n### DO NOT FORGET: enable autentication!\n@request.restful()\ndef api():\n    response.view = \'generic.\'+request.extension\n    def GET(*args,**vars):\n        patterns = [\n            "/benchmark_set[benchmark_set]",\n            "/benchmark_set[benchmark_set]/:field",\n            "/benchmark_set/{benchmark_set.name.startswith}",\n            "/benchmark_set/{benchmark_set.name}/:field",\n            "/scheduler_worker[scheduler_worker]",\n            "/scheduler_worker[scheduler_worker]/:field",\n            "/scheduler_worker/{scheduler_worker.status}",\n            "/scheduler_worker/{scheduler_worker.status}/:field",\n            "/scheduler_worker/{scheduler_worker.worker_name.startswith}",\n            "/scheduler_worker/{scheduler_worker.worker_name}/:field",\n            "/results[numeric_results]"\n            ]\n\n        parser = db.parse_as_rest(patterns,args,vars)\n        if parser.status == 200:\n            return dict(content=parser.response)\n        else:\n            raise HTTP(parser.status,parser.error)\n\n    def POST(table_name,**vars):\n        return db[table_name].validate_and_insert(**vars).id\n\n    def PUT(table_name,record_id,**vars):\n        return db(db[table_name]._id==record_id).update(**vars)\n\n    def DELETE(table_name,record_id):\n        return db(db[table_name]._id==record_id).delete()\n    return dict(GET=GET, POST=POST, PUT=PUT, DELETE=DELETE)\n\n@auth.requires_login()\ndef add_simulation_from_benchmark():\n    if not session.resources: session.resources = 0\n    session.resources+=1\n    teste = ""\n\n    """\n        Start new simulation from the benchmark list\n    """\n    " Get the names of all existing benchmarks "\n    search_str = "http://localhost:8000/benchmarktool/default/api/benchmark_set.json"\n    benchmark_row = json.loads(requests.get(search_str).text);\n\n    " Create a list with the benchmark names"\n    benchmarks = [benchmark_row[\'content\'][i][\'name\'] for i in range(len(benchmark_row[\'content\']))]\n\n    " Get the names of all active working nodes"\n    search_str = "http://localhost:8000/benchmarktool/default/api/scheduler_worker/active.json"\n    working_nodes_row = json.loads(requests.get(search_str).text);\n\n    " Create a list with all active working nodes names"\n    working_nd = [(working_nodes_row[\'content\'][i][\'id\'], working_nodes_row[\'content\'][i][\'worker_name\']) for i in range(len(working_nodes_row[\'content\']))]\n\n\n    " Create a form to add new simulation based on pre-determined benchmarks "\n    simulation_form=SQLFORM.factory(Field(\'benchmark_set\', requires=IS_IN_SET(benchmarks, zero=T(\'-- Select benchmark set --\'))),\n                  Field(\'start_level\',\'integer\',default=1, requires=IS_EXPR(\'int(value)>0\')),\n                  Field(\'final_level\',\'integer\',default=16, requires=IS_EXPR(\'int(value)>0\')),\n                  Field(\'reference_price\',\'double\',requires=IS_EXPR(\'float(value)>0\')),\n                  Field(\'price_precision\',\'double\',requires=IS_EXPR(\'float(value)>0\')),\n                  Field(\'available_resources\', \'list:working_nd\', requires=IS_IN_SET(working_nd, multiple=True), widget=SQLFORM.widgets.checkboxes.widget))\n\n    " Validate the input data from the form "\n    if simulation_form.validate():\n        " Get all the fields of benchmark_set table which id corresponds to the selected one from UI  "\n        search_str = "http://localhost:8000/benchmarktool/default/api/benchmark_set/"+simulation_form.vars.benchmark_set+".json"\n        sel_benchmark_row = json.loads(requests.get(search_str).text);\n\n        market_parameters= sel_benchmark_row[\'content\'][0][\'mkt_parameters\']\n\n        option_parameters= sel_benchmark_row[\'content\'][0][\'opt_parameters\']\n\n        " Generates the payload to insert a new job register to the database "\n        payload_job = {\'market_parameters\': market_parameters , \'option_parameters\': option_parameters, \'username\': auth.user_id}\n        new_job =  json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/job.json", data=payload_job).text);\n\n        " Add algorithm parameters "\n        payload_alg_param = {\'price_precision\': simulation_form.vars.price_precision, \'reference_price\': simulation_form.vars.reference_price, \'start_level\': simulation_form.vars.start_level, \'final_level\': simulation_form.vars.final_level}\n        new_alg_param = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/algorithm_parameters.json", data=payload_alg_param).text);\n        \n        for resource in simulation_form.vars.available_resources:\n            payload = {\'compute_server\': resource, \'alg_param\': new_alg_param, \'job_id\': new_job}\n            new_sim_param = requests.post("http://localhost:8000/benchmarktool/default/api/simulation.json", data=payload)\n\n        """\n        " Assign all the simulations to the selected working nodes "\n        for resource in range(len(working_nd)-1):\n            sufix = \'available_resources\'+str(resource+1)\n            if simulation_form.vars.sufix:\n                payload = {\'compute_server\': resource, \'alg_param\': new_alg_param.id, \'job_id\': new_job.id}\n                new_sim_param = requests.post("http://localhost:8000/benchmarktool/default/api/algorithm_parameters.json", data=payload)\n        """\n        """\n        if (new_job == 200):\n                " if it was successfuly added, then assign all the simulations to the selected working nodes "\n                for resource in range(len(simulation_form.vars.available_resources)):\n                    payload = {\'compute_server\': resource, \'alg_param\': new_alg_param.id, \'job_id\': new_job.id}\n                    new_sim_param = requests.post("http://application_host/default/api/algorithm_parameters.json", data=payload)\n                    if (new_sim !=200):\n                        "If there are any error, tell the user "\n                        response.flash = T(\'The simulation could not begin!\')\n                    else:\n                    response.flash = T(\'The parameters could not be added!\')\n        else:\n            response.flash = T(\'The task could not be started!\')\n    elif simulation_form.errors:\n            response.flash = T(\'Please check for errors on form!\')\n    else:\n        response.flash = T(\'Please fill the form\')\n    """\n    return dict(simulation_form=simulation_form,test_var=teste,toobar=response.toolbar())\n\nresponse._vars=response._caller(api)\n'
+p7
+sS'snapshot'
+p8
+(dp9
+S'exception'
+p10
+(dp11
+S'__hash__'
+p12
+S"<method-wrapper '__hash__' of exceptions.AttributeError object>"
+p13
+sS'__setattr__'
+p14
+S"<method-wrapper '__setattr__' of exceptions.AttributeError object>"
+p15
+sS'__reduce_ex__'
+p16
+S'<built-in method __reduce_ex__ of exceptions.AttributeError object>'
+p17
+sS'__getslice__'
+p18
+S"<method-wrapper '__getslice__' of exceptions.AttributeError object>"
+p19
+sS'__getitem__'
+p20
+S"<method-wrapper '__getitem__' of exceptions.AttributeError object>"
+p21
+sS'__setstate__'
+p22
+S'<built-in method __setstate__ of exceptions.AttributeError object>'
+p23
+sS'args'
+p24
+S'("\'Table\' object has no attribute \'alg_param\'",)'
+p25
+sS'__reduce__'
+p26
+S'<built-in method __reduce__ of exceptions.AttributeError object>'
+p27
+sS'__str__'
+p28
+S"<method-wrapper '__str__' of exceptions.AttributeError object>"
+p29
+sS'__format__'
+p30
+S'<built-in method __format__ of exceptions.AttributeError object>'
+p31
+sS'__getattribute__'
+p32
+S"<method-wrapper '__getattribute__' of exceptions.AttributeError object>"
+p33
+sS'__class__'
+p34
+S"<type 'exceptions.AttributeError'>"
+p35
+sS'__unicode__'
+p36
+S'<built-in method __unicode__ of exceptions.AttributeError object>'
+p37
+sS'__delattr__'
+p38
+S"<method-wrapper '__delattr__' of exceptions.AttributeError object>"
+p39
+sS'__subclasshook__'
+p40
+S'<built-in method __subclasshook__ of type object>'
+p41
+sS'__repr__'
+p42
+S"<method-wrapper '__repr__' of exceptions.AttributeError object>"
+p43
+sS'__dict__'
+p44
+S'{}'
+p45
+sS'__sizeof__'
+p46
+S'<built-in method __sizeof__ of exceptions.AttributeError object>'
+p47
+sS'__doc__'
+p48
+S"'Attribute not found.'"
+p49
+sS'__init__'
+p50
+S"<method-wrapper '__init__' of exceptions.AttributeError object>"
+p51
+sS'__new__'
+p52
+S'<built-in method __new__ of type object>'
+p53
+ssS'evalue'
+p54
+S"'Table' object has no attribute 'alg_param'"
+p55
+sS'request'
+p56
+cgluon.html
+XML_unpickle
+p57
+(S's\xa9I\x00\x00<div><table><tr><td style="font-weight:bold;vertical-align:top;">ajax</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">application</td><td style="vertical-align:top;">:</td><td><div>benchmarktool</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">args</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>simulation</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cid</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">client</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">controller</td><td style="vertical-align:top;">:</td><td><div>default</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cookies</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">env</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">CONTENT_LENGTH</td><td style="vertical-align:top;">:</td><td><div>39</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">CONTENT_TYPE</td><td style="vertical-align:top;">:</td><td><div>application/x-www-form-urlencoded</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_ACCEPT</td><td style="vertical-align:top;">:</td><td><div>*/*</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_ACCEPT_ENCODING</td><td style="vertical-align:top;">:</td><td><div>gzip, deflate, compress</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_CONTENT_LENGTH</td><td style="vertical-align:top;">:</td><td><div>39</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_CONTENT_TYPE</td><td style="vertical-align:top;">:</td><td><div>application/x-www-form-urlencoded</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_HOST</td><td style="vertical-align:top;">:</td><td><div>localhost:8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_USER_AGENT</td><td style="vertical-align:top;">:</td><td><div>python-requests/2.2.1 CPython/2.7.4 Linux/3.8.0-35-generic</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">PATH_INFO</td><td style="vertical-align:top;">:</td><td><div>/benchmarktool/default/api/simulation.json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">QUERY_STRING</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REMOTE_ADDR</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REMOTE_PORT</td><td style="vertical-align:top;">:</td><td><div>45172</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REQUEST_METHOD</td><td style="vertical-align:top;">:</td><td><div>POST</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SCRIPT_NAME</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_NAME</td><td style="vertical-align:top;">:</td><td><div>xD</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_PORT</td><td style="vertical-align:top;">:</td><td><div>8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_PROTOCOL</td><td style="vertical-align:top;">:</td><td><div>HTTP/1.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_SOFTWARE</td><td style="vertical-align:top;">:</td><td><div>Rocket 1.2.6</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">app_folders</td><td style="vertical-align:top;">:</td><td><div>set([&#x27;/home/cpnogueira/web2py/applications/admin/&#x27;, &#x27;/home/cpnogueira/web2py/applications/welcome/&#x27;, &#x27;/home/cpnogueira/web2py/applications/benchmarktool/&#x27;])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">applications_parent</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_args</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_options</td><td style="vertical-align:top;">:</td><td><div>&lt;Values at 0x1bb2998: {&#x27;verbose&#x27;: False, &#x27;ip&#x27;: &#x27;127.0.0.1&#x27;, &#x27;debuglevel&#x27;: 30, &#x27;with_scheduler&#x27;: False, &#x27;ips&#x27;: [&#x27;127.0.1.1&#x27;], &#x27;shutdown_timeout&#x27;: 5, &#x27;taskbar&#x27;: False, &#x27;with_coverage&#x27;: False, &#x27;port&#x27;: 8000, &#x27;maxthreads&#x27;: None, &#x27;softcron&#x27;: False, &#x27;server_name&#x27;: &#x27;xD&#x27;, &#x27;bpython&#x27;: False, &#x27;nogui&#x27;: False, &#x27;pid_filename&#x27;: &#x27;httpserver.pid&#x27;, &#x27;extcron&#x27;: False, &#x27;runcron&#x27;: False, &#x27;run_system_tests&#x27;: False, &#x27;test&#x27;: None, &#x27;folder&#x27;: &#x27;/home/cpnogueira/web2py&#x27;, &#x27;config&#x27;: &#x27;&#x27;, &#x27;minthreads&#x27;: None, &#x27;shell&#x27;: None, &#x27;run&#x27;: &#x27;&#x27;, &#x27;log_filename&#x27;: &#x27;httpserver.log&#x27;, &#x27;profiler_dir&#x27;: None, &#x27;args&#x27;: [&#x27;&#x27;], &#x27;socket_timeout&#x27;: 5, &#x27;ssl_ca_certificate&#x27;: None, &#x27;scheduler&#x27;: None, &#x27;interfaces&#x27;: None, &#x27;ssl_private_key&#x27;: &#x27;&#x27;, &#x27;scheduler_groups&#x27;: None, &#x27;password&#x27;: &#x27;&lt;ask&gt;&#x27;, &#x27;request_queue_size&#x27;: 5, &#x27;ssl_certificate&#x27;: &#x27;&#x27;, &#x27;cronjob&#x27;: False, &#x27;numthreads&#x27;: None, &#x27;quiet&#x27;: False, &#x27;import_models&#x27;: False, &#x27;timeout&#x27;: 10, &#x27;plain&#x27;: False, &#x27;nobanner&#x27;: False}&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">content_length</td><td style="vertical-align:top;">:</td><td><div>39</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">content_type</td><td style="vertical-align:top;">:</td><td><div>application/x-www-form-urlencoded</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">db_sessions</td><td style="vertical-align:top;">:</td><td><div>set([])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">debugging</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">gluon_parent</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_accept</td><td style="vertical-align:top;">:</td><td><div>*/*</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_accept_encoding</td><td style="vertical-align:top;">:</td><td><div>gzip, deflate, compress</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_content_length</td><td style="vertical-align:top;">:</td><td><div>39</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_content_type</td><td style="vertical-align:top;">:</td><td><div>application/x-www-form-urlencoded</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_host</td><td style="vertical-align:top;">:</td><td><div>localhost:8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_user_agent</td><td style="vertical-align:top;">:</td><td><div>python-requests/2.2.1 CPython/2.7.4 Linux/3.8.0-35-generic</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_jython</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_pypy</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_source</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">local_hosts</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>127.0.1.1</div></td></tr><tr><td><div>::1</div></td></tr><tr><td><div>xD</div></td></tr><tr><td><div>::ffff:127.0.0.1</div></td></tr><tr><td><div>127.0.0.1</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path_info</td><td style="vertical-align:top;">:</td><td><div>/benchmarktool/default/api/simulation.json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">query_string</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">remote_addr</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">remote_port</td><td style="vertical-align:top;">:</td><td><div>45172</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">request_method</td><td style="vertical-align:top;">:</td><td><div>POST</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">request_uri</td><td style="vertical-align:top;">:</td><td><div>/benchmarktool/default/api/simulation.json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">script_name</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_name</td><td style="vertical-align:top;">:</td><td><div>xD</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_port</td><td style="vertical-align:top;">:</td><td><div>8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_protocol</td><td style="vertical-align:top;">:</td><td><div>HTTP/1.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_software</td><td style="vertical-align:top;">:</td><td><div>Rocket 1.2.6</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_path</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_version</td><td style="vertical-align:top;">:</td><td><div>2.8.2-stable+timestamp.2013.11.28.13.54.07</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.errors</td><td style="vertical-align:top;">:</td><td><div>&lt;open file &#x27;&lt;stderr&gt;&#x27;, mode &#x27;w&#x27; at 0x7f9069b391e0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.file_wrapper</td><td style="vertical-align:top;">:</td><td><div>&lt;class wsgiref.util.FileWrapper at 0x1b2b050&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.input</td><td style="vertical-align:top;">:</td><td><div>&lt;socket._fileobject object at 0x7f90400a1050&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.multiprocess</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.multithread</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.run_once</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.url_scheme</td><td style="vertical-align:top;">:</td><td><div>http</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.version</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>1</div></td></tr><tr><td><div>0</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_errors</td><td style="vertical-align:top;">:</td><td><div>&lt;open file &#x27;&lt;stderr&gt;&#x27;, mode &#x27;w&#x27; at 0x7f9069b391e0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_file_wrapper</td><td style="vertical-align:top;">:</td><td><div>&lt;class wsgiref.util.FileWrapper at 0x1b2b050&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_input</td><td style="vertical-align:top;">:</td><td><div>&lt;socket._fileobject object at 0x7f90400a1050&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_multiprocess</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_multithread</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_run_once</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_url_scheme</td><td style="vertical-align:top;">:</td><td><div>http</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_version</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>1</div></td></tr><tr><td><div>0</div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">extension</td><td style="vertical-align:top;">:</td><td><div>json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">folder</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py/applications/benchmarktool/</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">function</td><td style="vertical-align:top;">:</td><td><div>api</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">global_settings</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">app_folders</td><td style="vertical-align:top;">:</td><td><div>set([&#x27;/home/cpnogueira/web2py/applications/admin/&#x27;, &#x27;/home/cpnogueira/web2py/applications/welcome/&#x27;, &#x27;/home/cpnogueira/web2py/applications/benchmarktool/&#x27;])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">applications_parent</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_args</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_options</td><td style="vertical-align:top;">:</td><td><div>&lt;Values at 0x1bb2998: {&#x27;verbose&#x27;: False, &#x27;ip&#x27;: &#x27;127.0.0.1&#x27;, &#x27;debuglevel&#x27;: 30, &#x27;with_scheduler&#x27;: False, &#x27;ips&#x27;: [&#x27;127.0.1.1&#x27;], &#x27;shutdown_timeout&#x27;: 5, &#x27;taskbar&#x27;: False, &#x27;with_coverage&#x27;: False, &#x27;port&#x27;: 8000, &#x27;maxthreads&#x27;: None, &#x27;softcron&#x27;: False, &#x27;server_name&#x27;: &#x27;xD&#x27;, &#x27;bpython&#x27;: False, &#x27;nogui&#x27;: False, &#x27;pid_filename&#x27;: &#x27;httpserver.pid&#x27;, &#x27;extcron&#x27;: False, &#x27;runcron&#x27;: False, &#x27;run_system_tests&#x27;: False, &#x27;test&#x27;: None, &#x27;folder&#x27;: &#x27;/home/cpnogueira/web2py&#x27;, &#x27;config&#x27;: &#x27;&#x27;, &#x27;minthreads&#x27;: None, &#x27;shell&#x27;: None, &#x27;run&#x27;: &#x27;&#x27;, &#x27;log_filename&#x27;: &#x27;httpserver.log&#x27;, &#x27;profiler_dir&#x27;: None, &#x27;args&#x27;: [&#x27;&#x27;], &#x27;socket_timeout&#x27;: 5, &#x27;ssl_ca_certificate&#x27;: None, &#x27;scheduler&#x27;: None, &#x27;interfaces&#x27;: None, &#x27;ssl_private_key&#x27;: &#x27;&#x27;, &#x27;scheduler_groups&#x27;: None, &#x27;password&#x27;: &#x27;&lt;ask&gt;&#x27;, &#x27;request_queue_size&#x27;: 5, &#x27;ssl_certificate&#x27;: &#x27;&#x27;, &#x27;cronjob&#x27;: False, &#x27;numthreads&#x27;: None, &#x27;quiet&#x27;: False, &#x27;import_models&#x27;: False, &#x27;timeout&#x27;: 10, &#x27;plain&#x27;: False, &#x27;nobanner&#x27;: False}&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">db_sessions</td><td style="vertical-align:top;">:</td><td><div>set([])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">debugging</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">gluon_parent</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_jython</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_pypy</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_source</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">local_hosts</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>127.0.1.1</div></td></tr><tr><td><div>::1</div></td></tr><tr><td><div>xD</div></td></tr><tr><td><div>::ffff:127.0.0.1</div></td></tr><tr><td><div>127.0.0.1</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_version</td><td style="vertical-align:top;">:</td><td><div>2.8.2-stable+timestamp.2013.11.28.13.54.07</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_https</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_local</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_restful</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">now</td><td style="vertical-align:top;">:</td><td><div>datetime.datetime(2014, 8, 21, 15, 53, 41, 813674)</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">raw_args</td><td style="vertical-align:top;">:</td><td><div>simulation.json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">raw_extension</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">url</td><td style="vertical-align:top;">:</td><td><div>/benchmarktool/default/api/simulation.json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">utcnow</td><td style="vertical-align:top;">:</td><td><div>datetime.datetime(2014, 8, 21, 13, 53, 41, 813685)</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">uuid</td><td style="vertical-align:top;">:</td><td><div>benchmarktool/127.0.0.1.2014-08-21.15-53-41.510250e2-6638-4e42-987e-db380e813a2b</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi</td><td style="vertical-align:top;">:</td><td><div>&lt;gluon.main.LazyWSGI object at 0x7f90400abf10&gt;</div></td></tr></table></div>'
+tRp58
+sS'frames'
+p59
+(lp60
+(dp61
+S'file'
+p62
+S'/home/cpnogueira/web2py/gluon/restricted.py'
+p63
+sS'dump'
+p64
+(dp65
+S'environment'
+p66
+S"{'A': <class 'gluon.html.A'>, 'ANY_OF': <class 'gluon.validators.ANY_OF'>, 'Auth': <class 'gluon.tools.Auth'>, 'B': <class 'gluon.html.B'>, 'BEAUTIFY': <class 'gluon.html.BEAUTIFY'>, 'BODY': <class 'gluon.html.BODY'>, 'BR': <class 'gluon.html.BR'>, 'BUTTON': <class 'gluon.html.BUTTON'>, 'CAT': <class 'gluon.html.CAT'>, 'CENTER': <class 'gluon.html.CENTER'>, ...}"
+p67
+sS'ccode'
+p68
+S'<code object <module> at 0x7f90406052b0, file "/...s/benchmarktool/controllers/default.py", line 11>'
+p69
+ssS'lnum'
+p70
+I217
+sS'lines'
+p71
+(dp72
+I212
+S'    try:'
+p73
+sI213
+S'        if isinstance(code, types.CodeType):'
+p74
+sI214
+S'            ccode = code'
+p75
+sI215
+S'        else:'
+p76
+sI216
+S'            ccode = compile2(code, layer)'
+p77
+sI217
+S'        exec ccode in environment'
+p78
+sI218
+S'    except HTTP:'
+p79
+sI219
+S'        raise'
+p80
+sI220
+S'    except RestrictedError:'
+p81
+sI221
+S'        # do not encapsulate (obfuscate) the original RestrictedError'
+p82
+ssS'call'
+p83
+S"(code='# -*- coding: utf-8 -*-\\n# this file is released ...toolbar())\\n\\nresponse._vars=response._caller(api)\\n', environment={'A': <class 'gluon.html.A'>, 'ANY_OF': <class 'gluon.validators.ANY_OF'>, 'Auth': <class 'gluon.tools.Auth'>, 'B': <class 'gluon.html.B'>, 'BEAUTIFY': <class 'gluon.html.BEAUTIFY'>, 'BODY': <class 'gluon.html.BODY'>, 'BR': <class 'gluon.html.BR'>, 'BUTTON': <class 'gluon.html.BUTTON'>, 'CAT': <class 'gluon.html.CAT'>, 'CENTER': <class 'gluon.html.CENTER'>, ...}, layer='/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py')"
+p84
+sS'func'
+p85
+S'restricted'
+p86
+sa(dp87
+g62
+S'/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py'
+p88
+sg64
+(dp89
+sg70
+I197
+sg71
+(dp90
+I192
+S'    else:'
+p91
+sI193
+S"        response.flash = T('Please fill the form')"
+p92
+sI194
+S'    """'
+p93
+sI195
+S'    return dict(simulation_form=simulation_form,test_var=teste,toobar=response.toolbar())'
+p94
+sI186
+S'                    else:'
+p95
+sI187
+S"                    response.flash = T('The parameters could not be added!')"
+p96
+sI188
+S'        else:'
+p97
+sI189
+S"            response.flash = T('The task could not be started!')"
+p98
+sI190
+S'    elif simulation_form.errors:'
+p99
+sI191
+S"            response.flash = T('Please check for errors on form!')"
+p100
+ssg83
+S'()'
+p101
+sg85
+S'<module>'
+p102
+sa(dp103
+g62
+S'/home/cpnogueira/web2py/gluon/globals.py'
+p104
+sg64
+(dp105
+S'self'
+p106
+S'undefined'
+p107
+sS'f'
+S'<function api>'
+p108
+ssg70
+I372
+sg71
+(dp109
+I367
+S'        self.menu = []             # used by the default view layout'
+p110
+sI368
+S'        self.files = []            # used by web2py_ajax.html'
+p111
+sI369
+S'        self.generic_patterns = []  # patterns to allow generic views'
+p112
+sI370
+S"        self.delimiters = ('{{', '}}')"
+p113
+sI371
+S'        self._vars = None'
+p114
+sI372
+S'        self._caller = lambda f: f()'
+p115
+sI373
+S'        self._view_environment = None'
+p116
+sI374
+S'        self._custom_commit = None'
+p117
+sI375
+S'        self._custom_rollback = None'
+p118
+sI376
+S''
+ssg83
+S'(f=<function api>)'
+p119
+sg85
+S'<lambda>'
+p120
+sa(dp121
+g62
+S'/home/cpnogueira/web2py/gluon/globals.py'
+p122
+sg64
+(dp123
+S'rest_action'
+p124
+S'<function POST>'
+p125
+sS'_self'
+p126
+S"<Storage {'_vars': <Storage {'compute_server': '.../cpnogueira/web2py/applications/benchmarktool/'}>"
+p127
+sS'_self.args'
+p128
+S"['simulation']"
+p129
+sS'builtingetattr'
+p130
+S'<built-in function getattr>'
+p131
+ssg70
+I336
+sg71
+(dp132
+I331
+S'                rest_action = _action().get(method, None)'
+p133
+sI332
+S'                if not (rest_action and method==method.upper()'
+p134
+sI333
+S'                        and callable(rest_action)):'
+p135
+sI334
+S'                    raise HTTP(400, "method not supported")'
+p136
+sI335
+S'                try:'
+p137
+sI336
+S"                    return rest_action(*_self.args, **getattr(_self,'vars',{}))"
+p138
+sI337
+S'                except TypeError, e:'
+p139
+sI338
+S'                    exc_type, exc_value, exc_traceback = sys.exc_info()'
+p140
+sI339
+S'                    if len(traceback.extract_tb(exc_traceback)) == 1:'
+p141
+sI340
+S'                        raise HTTP(400, "invalid arguments")'
+p142
+ssg83
+S"(_action=<function api>, _self=<Storage {'_vars': <Storage {'compute_server': '.../cpnogueira/web2py/applications/benchmarktool/'}>, *a=(), **b={})"
+p143
+sg85
+S'f'
+sa(dp144
+g62
+S'/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py'
+p145
+sg64
+(dp146
+S'global db'
+p147
+S'<DAL uri="mysql:******@localhost/tcc">'
+p148
+sS'].validate_and_insert'
+p149
+g107
+sS'table_name'
+p150
+S"'simulation'"
+p151
+sS').id'
+p152
+g107
+sS'vars'
+p153
+S"{'alg_param': '25', 'compute_server': '2', 'job_id': '27'}"
+p154
+ssg70
+I106
+sg71
+(dp155
+I101
+S'            return dict(content=parser.response)'
+p156
+sI102
+S'        else:'
+p157
+sI103
+S'            raise HTTP(parser.status,parser.error)'
+p158
+sI104
+S''
+sI105
+S'    def POST(table_name,**vars):'
+p159
+sI106
+S'        return db[table_name].validate_and_insert(**vars).id'
+p160
+sI107
+S''
+sI108
+S'    def PUT(table_name,record_id,**vars):'
+p161
+sI109
+S'        return db(db[table_name]._id==record_id).update(**vars)'
+p162
+sI110
+S''
+ssg83
+S"(table_name='simulation', **vars={'alg_param': '25', 'compute_server': '2', 'job_id': '27'})"
+p163
+sg85
+S'POST'
+p164
+sa(dp165
+g62
+S'/home/cpnogueira/web2py/gluon/dal.py'
+p166
+sg64
+(dp167
+S'].validate'
+p168
+g107
+sS'self'
+p169
+S'<Table simulation (id,compute_server,alg_parameters,job_id,result_id)>'
+p170
+sS'key'
+p171
+S"'alg_param'"
+p172
+sS'value'
+p173
+S"'25'"
+p174
+sS'error'
+p175
+S'None'
+p176
+ssg70
+I9014
+sg71
+(dp177
+I9009
+S'    def validate_and_insert(self,**fields):'
+p178
+sI9010
+S'        response = Row()'
+p179
+sI9011
+S'        response.errors = Row()'
+p180
+sI9012
+S'        new_fields = copy.copy(fields)'
+p181
+sI9013
+S'        for key,value in fields.iteritems():'
+p182
+sI9014
+S'            value,error = self[key].validate(value)'
+p183
+sI9015
+S'            if error:'
+p184
+sI9016
+S'                response.errors[key] = "%s" % error'
+p185
+sI9017
+S'            else:'
+p186
+sI9018
+S'                new_fields[key] = value'
+p187
+ssg83
+S"(self=<Table simulation (id,compute_server,alg_parameters,job_id,result_id)>, **fields={'alg_param': '25', 'compute_server': '2', 'job_id': '27'})"
+p188
+sg85
+S'validate_and_insert'
+p189
+sa(dp190
+g62
+S'/home/cpnogueira/web2py/gluon/dal.py'
+p191
+sg64
+(dp192
+S'builtinstr'
+p193
+S"<type 'str'>"
+p194
+sS'self'
+p195
+S'<Table simulation (id,compute_server,alg_parameters,job_id,result_id)>'
+p196
+sS'global ogetattr'
+p197
+S"<slot wrapper '__getattribute__' of 'object' objects>"
+p198
+sS'key'
+p199
+S"'alg_param'"
+p200
+ssg70
+I8817
+sg71
+(dp201
+I8812
+S'            query = self._build_query(key)'
+p202
+sI8813
+S'            return self._db(query).select(limitby=(0,1), orderby_on_limitby=False).first()'
+p203
+sI8814
+S"        elif str(key).isdigit() or 'google' in DRIVERS and isinstance(key, Key):"
+p204
+sI8815
+S'            return self._db(self._id == key).select(limitby=(0,1), orderby_on_limitby=False).first()'
+p205
+sI8816
+S'        elif key:'
+p206
+sI8817
+S'            return ogetattr(self, str(key))'
+p207
+sI8818
+S''
+sI8819
+S'    def __call__(self, key=DEFAULT, **kwargs):'
+p208
+sI8820
+S"        for_update = kwargs.get('_for_update',False)"
+p209
+sI8821
+S"        if '_for_update' in kwargs: del kwargs['_for_update']"
+p210
+ssg83
+S"(self=<Table simulation (id,compute_server,alg_parameters,job_id,result_id)>, key='alg_param')"
+p211
+sg85
+g20
+sasS'pyver'
+p212
+S'Python 2.7.4: /usr/bin/python (prefix: /usr)'
+p213
+sS'session'
+p214
+g57
+(S's\x1a\x00\x00\x00<div><table></table></div>'
+tRp215
+sS'etype'
+p216
+S"<type 'exceptions.AttributeError'>"
+p217
+sS'date'
+p218
+S'Thu Aug 21 15:53:41 2014'
+p219
+sS'response'
+p220
+g57
+(S's\x92\x1e\x00\x00<div><table><tr><td style="font-weight:bold;vertical-align:top;">body</td><td style="vertical-align:top;">:</td><td><div>&lt;cStringIO.StringO object at 0x7f90400b2458&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cookies</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">session_id_benchmarktool</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-c31b0fbb-909e-4011-9faa-639b5244bcee<table><tr><td style="font-weight:bold;vertical-align:top;">comment</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">domain</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">expires</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">httponly</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">max-age</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path</td><td style="vertical-align:top;">:</td><td><div>/</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">secure</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">version</td><td style="vertical-align:top;">:</td><td><div></div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">delimiters</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>{{</div></td></tr><tr><td><div>}}</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">files</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">flash</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">generic_patterns</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>*</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">google_analytics_id</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">headers</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">Content-Type</td><td style="vertical-align:top;">:</td><td><div>application/json</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">X-Powered-By</td><td style="vertical-align:top;">:</td><td><div>web2py</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">logo</td><td style="vertical-align:top;">:</td><td><div><a class="brand" data-w2p_disable_with="default" href="http://www.web2py.com/"><b>web<span>2</span>py</b>&trade;&nbsp;</a></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">menu</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div><table><tr><td><div>Home</div></td></tr><tr><td><div>False</div></td></tr><tr><td><div>/benchmarktool/default/index</div></td></tr><tr><td><div><table></table></div></td></tr></table></div></td></tr><tr><td><div><table><tr><td><div>Simulation</div></td></tr><tr><td><div>False</div></td></tr><tr><td><div>/benchmarktool/default/add_simulation_from_benchmark</div></td></tr><tr><td><div><table></table></div></td></tr></table></div></td></tr><tr><td><div><table><tr><td><div>Results</div></td></tr><tr><td><div>False</div></td></tr><tr><td><div>/benchmarktool/default/results</div></td></tr><tr><td><div><table></table></div></td></tr></table></div></td></tr><tr><td><div><table><tr><td><div>Administrative</div></td></tr><tr><td><div>False</div></td></tr><tr><td><div>/benchmarktool/default/admin</div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">meta</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">author</td><td style="vertical-align:top;">:</td><td><div>Your Name &lt;you@example.com&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">description</td><td style="vertical-align:top;">:</td><td><div>a cool new app</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">generator</td><td style="vertical-align:top;">:</td><td><div>Web2py Web Framework</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">keywords</td><td style="vertical-align:top;">:</td><td><div>web2py, python, framework</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">models_to_run</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>^\\w+\\.py$</div></td></tr><tr><td><div>^default/\\w+\\.py$</div></td></tr><tr><td><div>^default/api/\\w+\\.py$</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">postprocessing</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_client</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_compression_level</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_expires</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_key</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_data_name</td><td style="vertical-align:top;">:</td><td><div>session_data_benchmarktool</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_file</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_filename</td><td style="vertical-align:top;">:</td><td><div>/home/cpnogueira/web2py/applications/benchmarktool/sessions/127.0.0.1-c31b0fbb-909e-4011-9faa-639b5244bcee</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_hash</td><td style="vertical-align:top;">:</td><td><div>106f4c22ca06cc343e42b73a0d8492f6</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-c31b0fbb-909e-4011-9faa-639b5244bcee</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id_name</td><td style="vertical-align:top;">:</td><td><div>session_id_benchmarktool</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_masterapp</td><td style="vertical-align:top;">:</td><td><div>benchmarktool</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_new</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_storage_type</td><td style="vertical-align:top;">:</td><td><div>file</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">status</td><td style="vertical-align:top;">:</td><td><div>200</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">subtitle</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">title</td><td style="vertical-align:top;">:</td><td><div>Benchmarktool</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">view</td><td style="vertical-align:top;">:</td><td><div>generic.json</div></td></tr></table></div>'
+tRp221
+sS'locals'
+p222
+(dp223
+S'self'
+p224
+S'<Table simulation (id,compute_server,alg_parameters,job_id,result_id)>'
+p225
+sS'key'
+p226
+S"'alg_param'"
+p227
+sssS'traceback'
+p228
+S'Traceback (most recent call last):\n  File "/home/cpnogueira/web2py/gluon/restricted.py", line 217, in restricted\n    exec ccode in environment\n  File "/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py", line 197, in <module>\n  File "/home/cpnogueira/web2py/gluon/globals.py", line 372, in <lambda>\n    self._caller = lambda f: f()\n  File "/home/cpnogueira/web2py/gluon/globals.py", line 336, in f\n    return rest_action(*_self.args, **getattr(_self,\'vars\',{}))\n  File "/home/cpnogueira/web2py/applications/benchmarktool/controllers/default.py", line 106, in POST\n    return db[table_name].validate_and_insert(**vars).id\n  File "/home/cpnogueira/web2py/gluon/dal.py", line 9014, in validate_and_insert\n    value,error = self[key].validate(value)\n  File "/home/cpnogueira/web2py/gluon/dal.py", line 8817, in __getitem__\n    return ogetattr(self, str(key))\nAttributeError: \'Table\' object has no attribute \'alg_param\'\n'
+p229
+s.
