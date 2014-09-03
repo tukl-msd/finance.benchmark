@@ -5,7 +5,9 @@ scheduler = Scheduler(db)
 # table definition
 db.define_table('algorithm_parameters',
                 Field('start_level','integer'),
-                Field('final_level','integer'),
+                Field('multilevel_constant','integer'),
+                Field('number_of_paths_on_first_level','integer'),
+                Field('epsilon','double'),
                 Field('price_precision','double'),
                 Field('reference_price','double'))
 
@@ -61,11 +63,11 @@ db.define_table('simulation',
 
 # Field requirements definition
 db.algorithm_parameters.start_level.requires = IS_EXPR('int(value)>0')
-db.algorithm_parameters.final_level.requires = IS_EXPR('int(value)>0')
+db.algorithm_parameters.multilevel_constant.requires = IS_EXPR('int(value)>0')
+db.algorithm_parameters.number_of_paths_on_first_level.requires = IS_EXPR('int(value)>0')
+db.algorithm_parameters.epsilon.requires = IS_EXPR('float(value)>0')
 db.algorithm_parameters.price_precision.requires = IS_EXPR('float(value)>0')
 db.algorithm_parameters.reference_price.requires = IS_EXPR('float(value)>0')
-
-
 
 db.barrier.name.requires = IS_NOT_EMPTY()
 
@@ -98,12 +100,30 @@ db.simulation.result_id.requires = [IS_IN_DB(db, db.numeric_results.id),IS_NOT_E
 db.simulation.alg_parameters.requires = [IS_IN_DB(db,db.algorithm_parameters.id),IS_NOT_EMPTY()]
 
 #scheduler tasks
-def new_sim():
+def new_sim(mkt_param, opt_param, alg_param, sim_id):
     import subprocess
-    output = subprocess.check_output(['python3','/home/cpnogueira/Downloads/pyheston/heston_web2py.py'])
+    cmnd = "python3 /home/cpnogueira/Downloads/pyheston/GetArgs.py -a \""+str(alg_param)+"\" -m \""+str(mkt_param)+"\" -o \""+str(opt_param)+"\""
+    output = subprocess.check_output(cmnd,shell=True)
+
     results=output[1:-2].split(',')
+    """
+    energy = float(results[0])
+    runtime_value = float(results[1])
+    price = float(results[2])
+    precision_value = float(results[3])
 
-    payload = {'energy':results[0],'runtime_value':results[1],'price':results[2],'precision_value':results[3]}
+    " Insert result into database"
+    payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
     r = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/numeric_results.json", data=payload).text)
+    db.commit()
 
-    return results
+
+    
+    " Link result with the corresponding simulation "
+    payload = {'result_id': r}
+    update_sim = json.loads(requests.put("http://localhost:8000/benchmarktool/default/api/simulation.json",sim_id, data=payload).text)
+
+    mail.send('nogueira@rhrk.uni-kl.de','ID do resultado',str(payload))
+    """
+
+    return (results)

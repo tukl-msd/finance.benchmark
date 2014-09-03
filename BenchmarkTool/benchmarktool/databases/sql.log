@@ -272,3 +272,15 @@ success!
 timestamp: 2014-06-27T15:01:34.338504
 ALTER TABLE algorithm_parameters DROP COLUMN startlevel;
 success!
+timestamp: 2014-08-25T17:48:52.276663
+ALTER TABLE algorithm_parameters ADD multilevel_constant INT;
+success!
+timestamp: 2014-08-25T17:48:52.660648
+ALTER TABLE algorithm_parameters ADD epsilon DOUBLE;
+success!
+timestamp: 2014-08-25T17:48:53.022179
+ALTER TABLE algorithm_parameters ADD number_of_paths_on_first_level INT;
+success!
+timestamp: 2014-08-25T17:48:53.390288
+ALTER TABLE algorithm_parameters DROP COLUMN final_level;
+success!

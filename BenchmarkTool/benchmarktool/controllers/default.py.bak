@@ -9,8 +9,13 @@
 ## - call exposes all registered services (none by default)
 #########################################################################
 import json
+
 import requests
 from requests.auth import HTTPBasicAuth
+
+import pygal
+from pygal.style import CleanStyle
+
 
 def index():
     """
@@ -93,7 +98,13 @@ def api():
             "/scheduler_worker/{scheduler_worker.status}/:field",
             "/scheduler_worker/{scheduler_worker.worker_name.startswith}",
             "/scheduler_worker/{scheduler_worker.worker_name}/:field",
-            "/results[numeric_results]"
+            "/results[numeric_results]",
+            "/job[job]",
+            "/job/{job.id}/:field",
+            "/market_parameters/{market_parameters.id}",
+            "/option_parameters/{option_parameters.id}",
+            "/option_parameters/{option_parameters.id}/:field",
+            "/option_price/{option_price.id}/:field"
             ]
 
         parser = db.parse_as_rest(patterns,args,vars)
@@ -116,7 +127,7 @@ def api():
 def add_simulation_from_benchmark():
     if not session.resources: session.resources = 0
     session.resources+=1
-    teste = ""
+    lala = ""
 
     """
         Start new simulation from the benchmark list
@@ -139,7 +150,9 @@ def add_simulation_from_benchmark():
     " Create a form to add new simulation based on pre-determined benchmarks "
     simulation_form=SQLFORM.factory(Field('benchmark_set', requires=IS_IN_SET(benchmarks, zero=T('-- Select benchmark set --'))),
                   Field('start_level','integer',default=1, requires=IS_EXPR('int(value)>0')),
-                  Field('final_level','integer',default=16, requires=IS_EXPR('int(value)>0')),
+                  Field('multilevel_constant','integer',default=4, requires=IS_EXPR('int(value)>0')),
+                  Field('epsilon','double',default=0.02, requires=IS_EXPR('float(value)>0')),
+                  Field('number_of_paths_on_first_level','integer',default=10000, requires=IS_EXPR('int(value)>0')),
                   Field('reference_price','double',requires=IS_EXPR('float(value)>0')),
                   Field('price_precision','double',requires=IS_EXPR('float(value)>0')),
                   Field('available_resources', 'list:working_nd', requires=IS_IN_SET(working_nd, multiple=True), widget=SQLFORM.widgets.checkboxes.widget))
@@ -159,7 +172,7 @@ def add_simulation_from_benchmark():
         new_job =  json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/job.json", data=payload_job).text);
 
         " Add algorithm parameters "
-        payload_alg_param = {'price_precision': simulation_form.vars.price_precision, 'reference_price': simulation_form.vars.reference_price, 'start_level': simulation_form.vars.start_level, 'final_level': simulation_form.vars.final_level}
+        payload_alg_param = {'price_precision': simulation_form.vars.price_precision, 'reference_price': simulation_form.vars.reference_price, 'start_level': simulation_form.vars.start_level, 'multilevel_constant': simulation_form.vars.multilevel_constant, 'epsilon':simulation_form.vars.epsilon,'number_of_paths_on_first_level':simulation_form.vars.number_of_paths_on_first_level }
         new_alg_param = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/algorithm_parameters.json", data=payload_alg_param).text);
 
         " Assign all the simulations to the selected working nodes "
@@ -167,4 +180,38 @@ def add_simulation_from_benchmark():
             payload = {'compute_server': resource, 'alg_parameters': new_alg_param, 'job_id': new_job}
             new_sim_param = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/simulation.json", data=payload).text)
 
-    return dict(simulation_form=simulation_form,test_var=teste,toobar=response.toolbar())
+            " Get market parameter"
+            search_str = "http://localhost:8000/benchmarktool/default/api/market_parameters/"+str(market_parameters)+".json"
+            sel_mkt_param_row = json.loads(requests.get(search_str).text);
+            market_parameters= sel_mkt_param_row['content'][0]
+            market_parameters = {key: value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
+
+            " Get option parameter"
+            search_str = "http://localhost:8000/benchmarktool/default/api/option_parameters/"+str(option_parameters)+".json"
+            sel_opt_param_row = json.loads(requests.get(search_str).text);
+            option_parameters= {key: value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
+
+            " Get option name"
+            search_str = 'http://localhost:8000/benchmarktool/default/api/option_price/'+str(option_parameters['option_type'])+'/name.json'
+            option_name = json.loads(requests.get(search_str).text);
+            option_name = option_name['content'][0]['name']
+
+            " Update dictionary "
+            option_parameters['option_type'] = option_name
+
+            "Queuing all tasks"
+            result_id = scheduler.queue_task('new_sim',pvars=dict(mkt_param=market_parameters, opt_param=option_parameters, alg_param=payload_alg_param, sim_id=new_sim_param),group_name='cpu')
+            lala = result_id
+            "result_id = scheduler.queue_task(new_sim,pvars=dict(mkt_param=json.load(StringIO(market_parameters)), opt_param=json.load(StringIO(option_parameters)), alg_param=payload_alg_param, sim_id=new_sim_param),group_name='cpu')"
+
+            "mail.send('nogueira@rhrk.uni-kl.de','Task ID',str(result_id))"
+    return dict(simulation_form=simulation_form,test_var=lala,toobar=response.toolbar())
+
+def results():
+    return dict()
+
+def plot_pygal():
+    response.headers['Content-Type']='image/svg+xml'
+    bar_chart = pygal.Bar(style=CleanStyle) # Then create a bar graph object
+    bar_chart.add('Fibonacci', [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55]) # Add some values
+    return bar_chart.render()
