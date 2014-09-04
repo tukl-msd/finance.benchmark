@@ -1,3 +1,6 @@
 {{extend 'layout.html'}}
-<embed src="http://127.0.0.1:8000/benchmarktool/default/plot_pygal.svg" type="image/svg+xml" />
+
+{{=results_form}}
+<embed src="{{=URL(f='plot_graph', vars=dict(job_results=job_results))}}" type="image/svg+xml"/>
+
 {{=BEAUTIFY(response._vars)}}

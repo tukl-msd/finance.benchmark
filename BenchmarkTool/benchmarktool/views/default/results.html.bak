@@ -1,3 +1,6 @@
 {{extend 'layout.html'}}
-<h1>This is the default/results.html template</h1>
+
+{{=results_form}}
+<embed src="{{=URL(f='plot_graph', vars=dict(job_results=217))}}" type="image/svg+xml"/>
+
 {{=BEAUTIFY(response._vars)}}

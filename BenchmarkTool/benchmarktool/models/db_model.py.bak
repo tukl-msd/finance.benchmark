@@ -1,4 +1,7 @@
 # coding: utf8
+import json
+import requests
+
 from gluon.scheduler import Scheduler
 scheduler = Scheduler(db)
 
@@ -106,7 +109,7 @@ def new_sim(mkt_param, opt_param, alg_param, sim_id):
     output = subprocess.check_output(cmnd,shell=True)
 
     results=output[1:-2].split(',')
-    """
+
     energy = float(results[0])
     runtime_value = float(results[1])
     price = float(results[2])
@@ -117,13 +120,39 @@ def new_sim(mkt_param, opt_param, alg_param, sim_id):
     r = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/numeric_results.json", data=payload).text)
     db.commit()
 
+    return (r)
 
-    
+def send_simulation_id(task,sim_id):
+    num_result_id = None
+    " Pooling loop "
+    while 1:
+        task_status = scheduler.task_status(task, output=True)
+        if task_status.result:
+            num_result_id = task_status.result
+            break
+        time.sleep(60)
+
     " Link result with the corresponding simulation "
-    payload = {'result_id': r}
-    update_sim = json.loads(requests.put("http://localhost:8000/benchmarktool/default/api/simulation.json",sim_id, data=payload).text)
+    payload = {'result_id': num_result_id}
+    update_sim = json.loads(requests.put("http://localhost:8000/benchmarktool/default/api/simulation/"+str(sim_id)+".json", data=payload).text)
 
-    mail.send('nogueira@rhrk.uni-kl.de','ID do resultado',str(payload))
-    """
+    return (sim_id)
 
-    return (results)
+def send_mail(task_set,job_id):
+    for task in task_set:
+        while 1:
+            task_status = scheduler.task_status(task, output=True)
+            if task_status.result:
+                break
+            time.sleep(60)
+
+    " Send mail to user "
+    search_str = 'http://localhost:8000/benchmarktool/default/api/job/'+str(job_id)+'/username.json'
+    user_id = json.loads(requests.get(search_str).text);
+    user_id = user_id['content'][0]['username']
+
+    search_str = 'http://localhost:8000/benchmarktool/default/api/user/'+str(user_id)+'/email.json'
+    email = json.loads(requests.get(search_str).text);
+    email = email['content'][0]['email']
+    mail.send(email,'ID do resultado',str(job_id))
+    return
