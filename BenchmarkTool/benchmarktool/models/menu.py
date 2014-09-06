@@ -28,7 +28,6 @@ response.menu = [
     (T('Home'), (request.function=='index'), URL('default', 'index'), []),
     (T('Simulation'), (request.function=='add_simulation_from_benchmark'), URL('default','add_simulation_from_benchmark'), []),
     (T('Results'), (request.function=='results'), URL('default','results'), []),
-    (T('Administrative'), (request.function=='admin'), URL('default','admin'))
     ]
 
 DEVELOPMENT_MENU = False

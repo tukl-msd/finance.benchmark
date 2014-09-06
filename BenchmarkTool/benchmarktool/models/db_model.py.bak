@@ -2,8 +2,11 @@
 import json
 import requests
 
+
 from gluon.scheduler import Scheduler
 scheduler = Scheduler(db)
+HOST_URL = 'http://localhost:8000/'
+
 
 # table definition
 db.define_table('algorithm_parameters',
@@ -117,7 +120,7 @@ def new_sim(mkt_param, opt_param, alg_param, sim_id):
 
     " Insert result into database"
     payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
-    r = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/numeric_results.json", data=payload).text)
+    r = json.loads(requests.post(HOST_URL+"benchmarktool/default/api/numeric_results.json", data=payload).text)
     db.commit()
 
     return (r)
@@ -134,7 +137,7 @@ def send_simulation_id(task,sim_id):
 
     " Link result with the corresponding simulation "
     payload = {'result_id': num_result_id}
-    update_sim = json.loads(requests.put("http://localhost:8000/benchmarktool/default/api/simulation/"+str(sim_id)+".json", data=payload).text)
+    update_sim = json.loads(requests.put(HOST_URL+"benchmarktool/default/api/simulation/"+str(sim_id)+".json", data=payload).text)
 
     return (sim_id)
 
@@ -147,11 +150,11 @@ def send_mail(task_set,job_id):
             time.sleep(60)
 
     " Send mail to user "
-    search_str = 'http://localhost:8000/benchmarktool/default/api/job/'+str(job_id)+'/username.json'
+    search_str = HOST_URL+'benchmarktool/default/api/job/'+str(job_id)+'/username.json'
     user_id = json.loads(requests.get(search_str).text);
     user_id = user_id['content'][0]['username']
 
-    search_str = 'http://localhost:8000/benchmarktool/default/api/user/'+str(user_id)+'/email.json'
+    search_str = HOST_URL+'benchmarktool/default/api/user/'+str(user_id)+'/email.json'
     email = json.loads(requests.get(search_str).text);
     email = email['content'][0]['email']
     mail.send(email,'ID do resultado',str(job_id))

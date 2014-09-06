@@ -11,7 +11,7 @@
 
 if not request.env.web2py_runtime_gae:
     ## if NOT running on Google App Engine use SQLite or other DB
-    db = DAL('mysql://finance:poisonheart11@localhost/tcc',pool_size=1,check_reserved=['all'])
+    db = DAL('mysql://'+DB_USERNAME+':'+DB_PASS+'@'+DB_ADDRESS+'/'+DB_NAME,pool_size=1,check_reserved=['all'])
 else:
     ## connect to Google BigTable (optional 'google:datastore://namespace')
     db = DAL('google:datastore')
@@ -61,8 +61,8 @@ mail.settings.sender = 'gwthestonsimulation@gmail.com'
 mail.settings.login = 'gwthestonsimulation:wgT5cGzX9qMp'
 
 ## configure auth policy
-auth.settings.registration_requires_verification = True
-auth.settings.registration_requires_approval = True
+auth.settings.registration_requires_verification = False
+auth.settings.registration_requires_approval = False
 auth.settings.reset_password_requires_verification = True
 
 ## if you need to use OpenID, Facebook, MySpace, Twitter, Linkedin, etc.

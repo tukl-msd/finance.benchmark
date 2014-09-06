@@ -1,6 +1,7 @@
 {{extend 'layout.html'}}
-
 {{=results_form}}
-<embed src="{{=URL(f='plot_graph', vars=dict(job_results=job_results))}}" type="image/svg+xml"/>
-
-{{=BEAUTIFY(response._vars)}}
+{{=BEAUTIFY(job_results)}}
+{{if job_results:}}
+<embed src="http://131.246.118.147:8000/benchmarktool/default/plot_graph.svg" type="image/svg+xml" />
+<embed src="http://131.246.118.147:8000/benchmarktool/default/plot_graph2.svg" type="image/svg+xml" />
+{{pass}}

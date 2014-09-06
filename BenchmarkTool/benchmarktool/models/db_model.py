@@ -105,21 +105,28 @@ db.simulation.alg_parameters.requires = [IS_IN_DB(db,db.algorithm_parameters.id)
 #scheduler tasks
 def new_sim(mkt_param, opt_param, alg_param, sim_id):
     import subprocess
-    cmnd = "python3 /home/cpnogueira/Downloads/pyheston/GetArgs.py -a \""+str(alg_param)+"\" -m \""+str(mkt_param)+"\" -o \""+str(opt_param)+"\""
-    output = subprocess.check_output(cmnd,shell=True)
+    
+    cmnd = "python3 "+BENCHMARK_SCRIPT+" -a \""+str(alg_param)+"\" -m \""+str(mkt_param)+"\" -o \""+str(opt_param)+"\""
+    try:
+        output = subprocess.check_output(cmnd,shell=True)
+    except subprocess.CalledProcessError as e:
+        r = e
+    else:
+        results=output[1:-2].split(',')
 
-    results=output[1:-2].split(',')
+        energy = float(results[0])
+        runtime_value = float(results[1])
+        price = float(results[2])
+        precision_value = float(results[3])
 
-    energy = float(results[0])
-    runtime_value = float(results[1])
-    price = float(results[2])
-    precision_value = float(results[3])
-
-    " Insert result into database"
-    payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
-    r = json.loads(requests.post("http://localhost:8000/benchmarktool/default/api/numeric_results.json", data=payload).text)
-    db.commit()
-
+        " Insert result into database"
+        payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
+        try:
+            r = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/numeric_results.json", data=payload).text)
+        except ValueError, e:
+            r = e
+        else:
+            db.commit()
     return (r)
 
 def send_simulation_id(task,sim_id):
@@ -134,8 +141,13 @@ def send_simulation_id(task,sim_id):
 
     " Link result with the corresponding simulation "
     payload = {'result_id': num_result_id}
-    update_sim = json.loads(requests.put("http://localhost:8000/benchmarktool/default/api/simulation/"+str(sim_id)+".json", data=payload).text)
-
+    
+    try:
+        update_sim = json.loads(requests.put(HOST_URL+APPLICATION+"default/api/simulation/"+str(sim_id)+".json", data=payload).text)
+    except ValueError, e:
+        pass
+    else:
+        db.commit()
     return (sim_id)
 
 def send_mail(task_set,job_id):
@@ -147,12 +159,20 @@ def send_mail(task_set,job_id):
             time.sleep(60)
 
     " Send mail to user "
-    search_str = 'http://localhost:8000/benchmarktool/default/api/job/'+str(job_id)+'/username.json'
-    user_id = json.loads(requests.get(search_str).text);
-    user_id = user_id['content'][0]['username']
-
-    search_str = 'http://localhost:8000/benchmarktool/default/api/user/'+str(user_id)+'/email.json'
-    email = json.loads(requests.get(search_str).text);
-    email = email['content'][0]['email']
-    mail.send(email,'ID do resultado',str(job_id))
+    search_str = HOST_URL+'benchmarktool/default/api/job/'+str(job_id)+'/username.json'
+    try:
+        user_id = json.loads(requests.get(search_str).text);
+    except ValueError, e:
+        pass
+    else:    
+        user_id = user_id['content'][0]['username']
+    
+        search_str = HOST_URL+'benchmarktool/default/api/user/'+str(user_id)+'/email.json'
+        try:
+            email = json.loads(requests.get(search_str).text);
+        except ValueError, e:
+            pass
+        else:
+            email = email['content'][0]['email']
+            mail.send(email,'[BenchmarkTool] Your simulation is ready','You can check the results of your simulation on \"http://gwt.eit.uni-kl.de:8000/benchmarktool/default/results\" and search for Job ID number:'+str(job_id)+'.')
     return
