@@ -14,3 +14,9 @@ HOST_URL = 'http://<dns or ip>:8000/'
 APPLICATION = "<application_name>/"
 
 BENCHMARK_SCRIPT = "<full path and name of benchmark script (ex. /usr/local/share/pyheston/GetArgs.py)>"
+
+" E-mail configuration"
+M_USERNAME = '<username>'
+M_PASSWORD = '<password>'
+M_SERVER = '<smtp server domain or ip>:<port>'
+M_DOMAIN = '<e-mail domain>'
