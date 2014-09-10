@@ -3,7 +3,9 @@ import json
 import requests
 
 from gluon.scheduler import Scheduler
-scheduler = Scheduler(db)
+#Use migrate = True when you want to create all the tables
+#scheduler = Scheduler(db)
+scheduler = Scheduler(db, migrate=False)
 
 # table definition
 db.define_table('algorithm_parameters',

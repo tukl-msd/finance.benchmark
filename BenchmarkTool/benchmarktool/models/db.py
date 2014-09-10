@@ -11,7 +11,9 @@
 
 if not request.env.web2py_runtime_gae:
     ## if NOT running on Google App Engine use SQLite or other DB
-    db = DAL('mysql://'+DB_USERNAME+':'+DB_PASS+'@'+DB_ADDRESS+'/'+DB_NAME,pool_size=1,check_reserved=['all'])
+    #Use migrate = True when you want to create all the tables
+    #db = DAL('mysql://'+DB_USERNAME+':'+DB_PASS+'@'+DB_ADDRESS+'/'+DB_NAME,pool_size=1,check_reserved=['all'])
+    db = DAL('mysql://'+DB_USERNAME+':'+DB_PASS+'@'+DB_ADDRESS+'/'+DB_NAME,pool_size=1,check_reserved=['all'],migrate=False)
 else:
     ## connect to Google BigTable (optional 'google:datastore://namespace')
     db = DAL('google:datastore')
@@ -45,7 +47,9 @@ auth = Auth(db)
 crud, service, plugins = Crud(db), Service(), PluginManager()
 
 ## create all tables needed by auth if not custom tables
-auth.define_tables(username=True, signature=False)
+#Use migrate = True when you want to create all the tables
+#auth.define_tables(username=True, signature=False)
+auth.define_tables(username=True, signature=False, migrate=False)
 
 ## configure email
 #mail = auth.settings.mailer
