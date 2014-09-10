@@ -1,15 +1,16 @@
 Heston Benchmark v2.0 - Specification
 
-# Motivation and Goals
+Motivation and Goals
+===
 
 Developing accelerators for financial computations is currently a hot research topic. Many publications are out presenting dedicated SIMD, GPU, FPGA, ASIP, or ASIC implementations aimed to increase either the speed or the energy efficiency of one or a set of tasks. However, due to the large variety of underlying problems, models, algorithms, implementations, and evaluation metrics, it is nearly impossible to fairly tell which implementation is “best” for a given scenario.
 Evaluating and comparing different implementations is a challenge, especially if the target platforms differ. The point is that not all algorithms are suitable for all architectures, e.g. Monte Carlo methods might not converge as fast as quadrature or finite difference methods, but can easily be parallelized and therefore fit to highly parallel architectures like FPGAs or clusters.
-At the same time, cloud computing is moving into the finance domain and more and more institutes are going to offload compute intensive applications to cloud services. It is hard to evaluate how “good” those service perform compared to optimized GPU or FPGA solutions that can be kept in house.
+At the same time, cloud computing is moving into the finance domain and more and more institutes are going to offload compute intensive applications to cloud services.
+It is hard to evaluate how “good” those service perform compared to optimized GPU or FPGA solutions that can be kept in house.
+In addition, there is a difference between pricing only a single product and running a complete batch of pricing tasks.
+The system latency is a critical factor that needs to be considered here.
 
-We therefore see a strong demand for a portable benchmark set that allows to evaluate the following performance criteria of a pricing system:
-* the number of products priced per Joule
-* the number of products priced per second
-* the achieved numerical accuracy
+We therefore see a strong demand for a portable benchmark set that allows to evaluate the performance of a pricing system independent of its underlying architecture.
 
 More goals are:
 
@@ -19,7 +20,9 @@ More goals are:
 * The benchmark framework should be modular and easily extendable to more products and models.
 
 
-# Challenges and Questions
+Challenges and Questions
+===
+
 
 ## Scalability and Application Area
 
@@ -63,20 +66,24 @@ The time it takes to design or re-design a solver is a significant consideration
 Related to the previous aspect. How difficult is it to re-deploy an existing solution onto a different device of the same architecture / a new device of a next generation architecture / a completely different architecture? 
 
 
-# Preliminary work
+Preliminary work
+===
 
-The University of Kaiserslautern has already released a first version of a Heston benchmark for European double barrier option pricing ([www.uni-kl.de/benchmarking][1]) together with 12 predefined Heston parameter sets taken from literature. However, this version has some weaknesses:
+* The University of Kaiserslautern has already released a first version of a Heston benchmark for European double barrier option pricing ([www.uni-kl.de/benchmarking][1]) together with 12 predefined Heston parameter sets taken from literature. However, this version has some weaknesses:
 
    [1]: http://www.uni-kl.de/benchmarking
 
-1. The required accuracy of the result is not specified, so the result accuracy can freely be determined and therefore influences runtime and energy consumption and so decreases the comparability.
+	1. The required accuracy of the result is not specified, so the result accuracy can freely be determined and therefore influences runtime and energy consumption and so decreases the comparability.
 
-2. There is no scoring for easy comparison.
+	2. There is no scoring for easy comparison.
 
-3. The benchmark is not challenging enough for high-performance clusters or pricing engines. 
+	3. The benchmark is not challenging enough for high-performance clusters or pricing engines. 
+
+* STAC industrial benchmarks for finance
 
 
-# Partners and Contributions
+Partners and Contributions
+===
 
 Possible contributors:
 
