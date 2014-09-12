@@ -26,7 +26,6 @@ def index():
     """
     return dict(message=T('Benchmark Demo'))
 
-
 def user():
     """
     exposes:
@@ -52,7 +51,6 @@ def download():
     """
     return response.download(request, db)
 
-
 def call():
     """
     exposes services. for example:
@@ -61,7 +59,6 @@ def call():
     supports xml, json, xmlrpc, jsonrpc, amfrpc, rss, csv
     """
     return service()
-
 
 @auth.requires_signature()
 def data():
@@ -127,10 +124,6 @@ def api():
 
 @auth.requires_login()
 def add_simulation_from_benchmark():
-    if not session.resources: session.resources = 0
-    session.resources+=1
-    lala = ""
-
     """
         Start new simulation from the benchmark list
     """
@@ -191,58 +184,65 @@ def add_simulation_from_benchmark():
                         except ValueError, e:
                             pass
                         else:
-                            "Create list of simulations from one job"
-                            job_sim_list = []
-                            " Assign all the simulations to the selected working nodes "
-                            for resource in simulation_form.vars.available_resources:
-                                payload = {'compute_server': resource, 'alg_parameters': new_alg_param, 'job_id': new_job}
+                            " Get market parameter"
+                            search_str = HOST_URL+APPLICATION+"default/api/market_parameters/"+str(market_parameters)+".json"
+                            try:
+                                sel_mkt_param_row = json.loads(requests.get(search_str).text);
+                            except ValueError, e:
+                                pass
+                            else:
+                                market_parameters= sel_mkt_param_row['content'][0]
+                                market_parameters = {key: value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
+
+                                " Get option parameter"
+                                search_str = HOST_URL+APPLICATION+"default/api/option_parameters/"+str(option_parameters)+".json"
                                 try:
-                                    new_sim_param = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/simulation.json", data=payload).text)
+                                    sel_opt_param_row = json.loads(requests.get(search_str).text);
                                 except ValueError, e:
                                     pass
                                 else:
-                                    " Get market parameter"
-                                    search_str = HOST_URL+APPLICATION+"default/api/market_parameters/"+str(market_parameters)+".json"
+                                    option_parameters= {key: value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
+                                    " Get option name"
+                                    search_str = HOST_URL+'benchmarktool/default/api/option_price/'+str(option_parameters['option_type'])+'/name.json'
                                     try:
-                                        sel_mkt_param_row = json.loads(requests.get(search_str).text);
+                                        option_name = json.loads(requests.get(search_str).text);
                                     except ValueError, e:
                                         pass
                                     else:
-                                        market_parameters= sel_mkt_param_row['content'][0]
-                                        market_parameters = {key: value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
-                            
-                                        " Get option parameter"
-                                        search_str = HOST_URL+APPLICATION+"default/api/option_parameters/"+str(option_parameters)+".json"
-                                        try:
-                                            sel_opt_param_row = json.loads(requests.get(search_str).text);
-                                        except ValueError, e:
-                                            pass
-                                        else:
-                                            option_parameters= {key: value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
-                                
-                                            " Get option name"
-                                            search_str = HOST_URL+'benchmarktool/default/api/option_price/'+str(option_parameters['option_type'])+'/name.json'
+                                        option_name = option_name['content'][0]['name']
+
+                                        " Update dictionary "
+                                        option_parameters['option_type'] = option_name
+                                        "Create list of simulations from one job"
+                                        job_sim_list = []
+		                            
+                                        " Assign all the simulations to the selected working nodes "
+                                        for resource in simulation_form.vars.available_resources:
+                                            payload = {'compute_server': resource, 'alg_parameters': new_alg_param, 'job_id': new_job}
                                             try:
-                                                option_name = json.loads(requests.get(search_str).text);
+                                                new_sim_param = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/simulation.json", data=payload).text)
                                             except ValueError, e:
                                                 pass
                                             else:
-                                                option_name = option_name['content'][0]['name']
-                                    
-                                                " Update dictionary "
-                                                option_parameters['option_type'] = option_name
-                                    
-                                    
+                                                " Get the group name of selected node "
+                                                search_str = HOST_URL+APPLICATION+"default/api/scheduler_worker/"+str(resource)+"/group_names.json"
+		                            try:
+                                                working_group_row = json.loads(requests.get(search_str).text);
+                                            except ValueError, e:
+                                                pass
+                                            else:
+                                                working_group = working_group_row['content'][0]['group_names'][0]
                                                 "Queuing all tasks"
-                                                task_id = scheduler.queue_task('new_sim',pvars=dict(mkt_param=market_parameters, opt_param=option_parameters, alg_param=payload_alg_param, sim_id=new_sim_param),group_name='cpu',timeout=36000)
+                                                "simulation tasks"
+                                                task_id = scheduler.queue_task('new_sim',pvars=dict(mkt_param=market_parameters, opt_param=option_parameters, alg_param=payload_alg_param, sim_id=new_sim_param),group_name=working_group,timeout=36000)                       
                                                 db.commit()
-                                    
-                                                monitoring = scheduler.queue_task('send_simulation_id',pvars={'task':int(task_id.id),'sim_id':new_sim_param},group_name='cpu', timeout=36000)
+                                                "monitoring simulation tasks"
+                                                monitoring = scheduler.queue_task('send_simulation_id',pvars={'task':int(task_id.id),'sim_id':new_sim_param},group_name=working_group, timeout=36000)
                                                 job_sim_list.append(int(monitoring.id))
                                                 db.commit()
-                                    
-                                            send_mail_confirmation = scheduler.queue_task('send_mail',pvars={'task_set':job_sim_list,'job_id':new_job},group_name='cpu',timeout=36000)
-    return dict(simulation_form=simulation_form,test_var=lala,toobar=response.toolbar())
+                                        "send mail when all tasks finish"
+                                        send_mail_confirmation = scheduler.queue_task('send_mail',pvars={'task_set':job_sim_list,'job_id':new_job},group_name=working_group,timeout=36000)
+    return dict(simulation_form=simulation_form)
 
 def results():
     job_id = ''

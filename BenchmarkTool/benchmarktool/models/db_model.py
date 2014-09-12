@@ -153,12 +153,16 @@ def send_simulation_id(task,sim_id):
     return (sim_id)
 
 def send_mail(task_set,job_id):
-    for task in task_set:
-        while 1:
+    import time
+    
+    num_tasks = len(task_set)
+	
+    while num_tasks != 0:
+        for task in task_set:
             task_status = scheduler.task_status(task, output=True)
             if task_status.result:
-                break
-            time.sleep(60)
+                num_tasks=num_tasks-1
+        time.sleep(60)
 
     " Send mail to user "
     search_str = HOST_URL+'benchmarktool/default/api/job/'+str(job_id)+'/username.json'
