@@ -264,7 +264,7 @@ def results():
     
             for simulation in simulations:
                 " Get results from simulation"
-                search_str = HOST_URL+'benchmarktool/default/api/results/'+str(simulation['result_id'])+'.json'
+                search_str = HOST_URL+APPLICATION+"default/api/results/"+str(simulation['result_id'])+".json"
                 try:
                     sim_result = json.loads(requests.get(search_str).text);
                 except ValueError,e:
@@ -273,7 +273,7 @@ def results():
                     sim_result = sim_result['content'][0]
         
                     " Get worker_name "
-                    search_str = HOST_URL+'benchmarktool/default/api/scheduler_worker/'+str(simulation['compute_server'])+'/worker_name.json'
+                    search_str = HOST_URL+APPLICATION+"default/api/scheduler_worker/"+str(simulation['compute_server'])+"/worker_name.json"
                     try:
                         working_node = json.loads(requests.get(search_str).text);
                     except ValueError, e:
