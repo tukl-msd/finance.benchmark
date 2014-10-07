@@ -254,7 +254,7 @@ def results():
         job_id = results_form.vars.Job_ID
 
         " Get all simulations related to Job_ID"
-        search_str = HOST_URL+'benchmarktool/default/api/simulation/'+str(job_id)+'.json'
+        search_str = HOST_URL+APPLICATION+"default/api/simulation/"+str(job_id)+".json"
         try:
             simulations = json.loads(requests.get(search_str).text);
         except ValueError, e:
