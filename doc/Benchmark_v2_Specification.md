@@ -14,7 +14,7 @@ We therefore see a strong demand for a portable benchmark set that allows to eva
 
 Our goals are:
 
-* To provide an unambigious, platform and algorithm independent benchmark of derivatives pricing problems.
+* To provide an unambiguous, platform and algorithm independent benchmark of derivatives pricing problems.
     * As part of the derivatives pricing benchmark, we provide an executable implementation that generates the correct reference results. This reference implementation is freely available here `TODO: Insert link here`
     * The benchmark parameters reflect meaningful and realistic scenarios found in markets, but also cover corner cases as observed in the days just before a crash or other peculiar events.
     * The benchmark framework is modular, and so is easily extendable to more products and models. Where possible, we provide guidance as to how it should be extended.
@@ -35,30 +35,29 @@ Problem Structure
 ---
 
 Depending on their application (single price computation vs. portfolio evaluation, VaR, ...), the performance of product pricers can differ in a wide range, e.g. from a non-optimized single-threaded CPU program up to dedicated high-speed dataflow architectures or huge clusters.
-The benchmark needs to address the complete range, e.g. by providing several complex test batteries with different computational complexity.
+The benchmark seeks to address the complete range, e.g. by providing several complex test batteries with different computational complexity.
 
-The benchmarks has therefore two levels of input:
-- Pricing task: a single pricing problem over an underlying and an option
-- Pricing workload: a set of Pricing Tasks
+The benchmark has two levels of input:
 
-A given implementation will be applied to a work-load,
-and will be found to meet a particular accuracy level
-(whether through design or luck). They can then report
-the performance characteristics for that workload at
-that accuracy band.
+- Pricing task: a single pricing problem over a single underlying such as a unit of stock or commodity and an option product that depends upon this underlying.
+- Pricing workload: a set of Pricing Tasks as defined above.
 
-TODO from Gordon, discuss: 
-* Considering different data sources might also be an interesting - historical vs stochastic, etc.
+A use case of the benchmark is that a given implementation will be applied to a workload or option pricing task, and will be found to meet a particular accuracy level (whether through design or luck). The performance characteristics of the implementation for that workload or task at that accuracy band would then be reported.
 
+The parameters provided are derived from ...
+
+`TODO: specify data sources - whether historical or stochastic`
 
 Underlyings
 -----------
 
-The underlying is one of:
+The underlyings are defined in terms of the following models:
 
-- Black Scholes
-- Jump Diffusion (BS)
-- Heston
+- [Black Scholes] [1]
+- [Black Scholes with Jump Diffusion] [2]
+- [Heston] [3]
+
+`TODO: More authoratative references needed`
 
 Ranges of the walk parameters should reflect typical
 underlyings observed in the market - a good approach
@@ -69,28 +68,41 @@ at different points in time (say 100 underlyings over
 do a maximum entropy fit. If this doesn't result in
 any "hard" parameters, then we'd want to revisit that.
 
-The underlyings are fixed, tabulated, and made
-available as a csv.
+The benchmark's 3000 underlyings are fixed, tabulated, and the parameters are made available in this csv file `TODO: Insert link here.`. Each underlying is uniquely identifiable by an Underlying ID.
+
+[1]: http://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model "Black Scholes"
+[2]: http://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C "Black Scholes with Jump Diffusion"
+[3]: http://en.wikipedia.org/wiki/Heston_model "Heston"
+
 
 
 Options
 -------
 
-The option is one of:
+The option product is one of:
 
-- Single-barrier knockout
-- Double-barrier knockout
-- Lookback
-- Arithmetic Asian
+- [Single-barrier knockout or knockin] [1]
+- [Double-barrier knockout] [2]
+- [Lookback] [3]
+- [Arithmetic Asian] [4]
 
-All options are continuously observed, as this makes
-for the most interesting problem mathematically, and
-provides the most incentive to do adaptation and multi-level
-stuff.
+`TODO: More authoratative references needed`
+
+All options have Eurpopean excericse properties, however are continuously observed. This makes for interesting problems mathematically, and provides opportunities for algorithmic refinement.
+
+The benchmark's 1000 options are fixed, tabulated, and the parameters are made available in this csv file `TODO: Insert link here.`. Each option is uniquely identifiable by an Option ID.
+
+Two possible points of expansion:
+
+* Considering the defined options with American or Bermudian exercise properties. For the Bermudian case, the excercise point considered should be once a day at midday, with 252 trading days per year.
+* Defining products such as portfolios or basket options that are based upon the defined options. In this case, some degree of correlation should be specified between any options that share underlyings.
 
 We plan to enhance the benchmark for more products later, e.g. to American / Bermudian options, products and models with relationships - products which depend on other products, models that are correlated (e.g. basket options, credit and forex swaps).
 
-
+[1]: http://en.wikipedia.org/wiki/Barrier_option "Single-barrier knockout or knockin"
+[2]: http://www.investopedia.com/terms/d/doublebarrieroption.asp "Double-barrier knockout"
+[3]: http://en.wikipedia.org/wiki/Lookback_option "Lookback"
+[4]: http://en.wikipedia.org/wiki/Asian_option "Arithmetic Asian"
 
 TODO: refine:
 The parameters are again inspired by real-world option
@@ -111,38 +123,34 @@ right now though :)
 TODO from Gordon:
 * Provide ranges of values for parameters, so that researchers could generate their own problems that are still "sensible". To simulate market pricing conditions, researchers could then also generate products on the fly from the ranges, and characterise how their systems cope with these sorts of problems.
 
-Again, the underlyings are fixed, tabulated, and
-then made available as a csv.
-
 
 Workloads
 ---------
+A pricing task within the benchmark is formed from 10000 pairings of the defined underlyings and options that have non-zero values. Each task is defined by its unique Task ID, as well as Underlying ID and Option ID that comprises its pairing. A reference value is also provided. The pairings are fixed, and are made available in this CSV file `TODO: Insert link here.`.
 
-I'm going to arbitrarily pick some numbers: there are
-3000 distinct underlyings, and 1000 distinct options.
-The workload is formed of 10000 random pairings of
-underlyings and options (subject to constraints on
-getting a meaningful output). The random pairings are
-fixed and part of the benchmark.
+Two categories of workloads are defined:
 
+* Size-bound workloads:
+    * Single task workloads. As there are 10000 tasks defined within the benchmark, there are 10000 single task workloads possible within the benchmark.
+    * 100 task workloads. Each 100 tasks are bundeled into a single workload. `TODO: add further clarification as how the tasks should be bundeled`.
+    * 10000 task workload. This is a single workload comprising all of the tasks defined within the benchmark.
+    
+* Underlying or Option Category workloads: Tasks which incorporate particular underlying or option type might be considered, e.g. all of the Heston underlyings or all of the Lookback Options. Furthermore, the combination of a particular option and underlying may also be considered, e.g. all of the tasks which are Asian options with Black Scholes underlyings.
 
-Accuracy
---------
+A point of expansion is to create new tasks by consider underlying and option pairings beyond those defined within the framework. Options with non-zero values (verified using the reference implementations) are recommended so as to ensure that the pricing tasks are sufficiently complex.
 
-The primary accuracy metric is relative error, rather
-than absolute error, simply because it is more difficult
-to achieve, and makes more sense in the application domain.
+Accuracy Levels
+--------------
 
-There are three accuracy bands:
-- Low: tol=0.001 (1e-3)
-- Standard: tol=0.0001 (1e-5)
-- High: tol=0.0000001 (1e-7)
+The primary accuracy metric is relative error, rather than absolute error, simply because it is more difficult to achieve and is more applicable in the financial domain.
 
-The intent is that Low is appropriate for quick and
-dirty calculations, e.g. real-time risk, Standard is
-fine for most day-to-day purposes, and High is really
-only of academic interest to show that a method can
-scale to high accuracies.
+There are three accuracy bands defined within the framework:
+
+- Low: tol = 0.001 (1e-3)
+- Standard: tol = 0.0001 (1e-5)
+- High: tol = 0.0000001 (1e-7)
+
+The intent is that the Low band is appropriate for low latency calculations, e.g. real-time risk, Standard is intended for more general risk analysis purposes, and High is really only of academic interest to show that a method can scale to high accuracies. `TODO: Should probably add a reference for these claims`
 
 (In order for this to meaningful, that means that we
 need to have reference prices for all tasks in the
@@ -151,17 +159,10 @@ That may actually be infeasible, but it would be
 interesting if it were a spur or a challenge to
 people.)
 
-Accuracy over a work-load is defined in terms of
-RMSE. If there is a work-load of $n$ items, and
-$e_i$ and $o_i$ are the observed and expected
-prices, then in order to meet a given accuracy
-band we must have _both_ of:
+Accuracy for a workload is defined in terms of RMSE. If there is a workload of _n_ items, and _e\_i_ and _o\_i_ are the observed and expected prices, then in order to meet a given accuracy band, __both__ criteria must be met:
 
-sqrt( sum( ((e_i-o_i)/e_i)^2, i=1..n) / n ) <= tol
-
-and:
-
-max( (e_i-o_i)/e_i, i=1..n ) <= 4*tol
+1. tol >= sqrt( sum( ( (e_i-o_i)/e_i )^2, i=1..n) / n )
+2. 4*tol >= max( (e_i-o_i)/e_i, i=1..n )
 
 The second criterion is to avoid high variance
 solutions which are good on average, given
