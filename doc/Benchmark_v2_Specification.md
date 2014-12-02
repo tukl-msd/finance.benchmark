@@ -279,11 +279,6 @@ The benchmark will contain an executable sequential classic Monte Carlo CPU pric
 Its goal is to make all the results reproducible and serve as a starting point for those who want to benchmark their own implementations.
 
 
-
-
-
-
-
 Preliminary work
 ===
 
