@@ -59,22 +59,11 @@ The underlyings are defined in terms of the following models:
 
 `TODO: More authoratative references needed`
 
-Ranges of the walk parameters should reflect typical
-underlyings observed in the market - a good approach
-would be to pick a whole bunch of actual time-series
-at different points in time (say 100 underlyings over
-10 year-long periods to give 1000 underlyings, or
-3000 for a full fit with all thre models), then
-do a maximum entropy fit. If this doesn't result in
-any "hard" parameters, then we'd want to revisit that.
-
-The benchmark's 3000 underlyings are fixed, tabulated, and the parameters are made available in this csv file `TODO: Insert link here.`. Each underlying is uniquely identifiable by an Underlying ID.
+The benchmark's 3000 underlying are fixed, tabulated, and the parameters are made available in this csv file `TODO: Insert link here.`. Each underlying is uniquely identifiable by an Underlying ID.
 
 [1]: http://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model "Black Scholes"
 [2]: http://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C "Black Scholes with Jump Diffusion"
 [3]: http://en.wikipedia.org/wiki/Heston_model "Heston"
-
-
 
 Options
 -------
@@ -88,51 +77,29 @@ The option product is one of:
 
 `TODO: More authoratative references needed`
 
-All options have Eurpopean excericse properties, however are continuously observed. This makes for interesting problems mathematically, and provides opportunities for algorithmic refinement.
+All options have European exercise properties, however are continuously observed. This makes for interesting problems mathematically, and provides opportunities for algorithmic refinement.
 
 The benchmark's 1000 options are fixed, tabulated, and the parameters are made available in this csv file `TODO: Insert link here.`. Each option is uniquely identifiable by an Option ID.
 
 Two possible points of expansion:
 
-* Considering the defined options with American or Bermudian exercise properties. For the Bermudian case, the excercise point considered should be once a day at midday, with 252 trading days per year.
-* Defining products such as portfolios or basket options that are based upon the defined options. In this case, some degree of correlation should be specified between any options that share underlyings.
-
-We plan to enhance the benchmark for more products later, e.g. to American / Bermudian options, products and models with relationships - products which depend on other products, models that are correlated (e.g. basket options, credit and forex swaps).
+* Considering the defined options with American or Bermudian exercise properties. For the Bermudian case, the exercise point considered should be once a day at midday, with 252 trading days per year.
+* Defining products such as portfolios or basket options that are based upon the defined options. In this case, some degree of correlation should be specified between any options that share underlying.
 
 [1]: http://en.wikipedia.org/wiki/Barrier_option "Single-barrier knockout or knockin"
 [2]: http://www.investopedia.com/terms/d/doublebarrieroption.asp "Double-barrier knockout"
 [3]: http://en.wikipedia.org/wiki/Lookback_option "Lookback"
 [4]: http://en.wikipedia.org/wiki/Asian_option "Arithmetic Asian"
 
-TODO: refine:
-The parameters are again inspired by real-world option
-parameters, though in this case it is less clear how
-to choose them. There is a reasonable argument for
-choosing them equally spaced in some sense, rather
-than driven by traded volume or something, as we
-don't know what is important to different people.
-It is crucial that the provided model parameters reflect realistic scenarios a) of day-to-day situations in different markets (e.g. liquid stock exchange, FOREX, …), but also critical corner cases that have shown to be hard to handle in the past. The data should therefore be legitimated carefully by one or more of the business partners (see below).
-
-
-TODO: refine:
-We need to ensure that prices end up in the "meaningful"
-range, so that we don't get prices in the range which
-could get rounded to zero, or cause problems with
-relative error. I don't know how to define that
-right now though :)
-TODO from Gordon:
-* Provide ranges of values for parameters, so that researchers could generate their own problems that are still "sensible". To simulate market pricing conditions, researchers could then also generate products on the fly from the ranges, and characterise how their systems cope with these sorts of problems.
-
-
 Workloads
 ---------
-A pricing task within the benchmark is formed from 10000 pairings of the defined underlyings and options that have non-zero values. Each task is defined by its unique Task ID, as well as Underlying ID and Option ID that comprises its pairing. A reference value is also provided. The pairings are fixed, and are made available in this CSV file `TODO: Insert link here.`.
+A pricing task within the benchmark is formed from 10000 pairings of the defined underlying and options that have non-zero values. Each task is defined by its unique Task ID, as well as Underlying ID and Option ID that comprises its pairing. A reference value is also provided. The pairings are fixed, and are made available in this CSV file `TODO: Insert link here.`.
 
 Two categories of workloads are defined:
 
 * Size-bound workloads:
     * Single task workloads. As there are 10000 tasks defined within the benchmark, there are 10000 single task workloads possible within the benchmark.
-    * 100 task workloads. Each 100 tasks are bundeled into a single workload. There are 100 workloads of this size `TODO: add further clarification as how the tasks should be bundeled`.
+    * 100 task workloads. Each 100 tasks are bundled into a single workload. There are 100 workloads of this size `TODO: add further clarification as how the tasks should be bundeled`.
     * 10000 task workload. This is a single workload comprising all of the tasks defined within the benchmark.
     
 * Underlying or Option Category workloads: Tasks which incorporate particular underlying or option type might be considered, e.g. all of the Heston underlyings or all of the Lookback Options. Furthermore, the combination of a particular option and underlying may also be considered, e.g. all of the tasks which are Asian options with Black Scholes underlyings.
@@ -152,26 +119,12 @@ There are three accuracy bands defined within the framework:
 
 The intent is that the Low band is appropriate for low latency calculations, e.g. real-time risk, Standard is intended for more general risk analysis purposes, and High is really only of academic interest to show that a method can scale to high accuracies. `TODO: Should probably add a reference for these claims`
 
-(In order for this to meaningful, that means that we
-need to have reference prices for all tasks in the
-workload that are accurate down to around 1e-8.
-That may actually be infeasible, but it would be
-interesting if it were a spur or a challenge to
-people.)
-
 Accuracy for a workload is defined in terms of RMSE. If there is a workload of _n_ items, and _e\_i_ and _o\_i_ are the observed and expected prices, then in order to meet a given accuracy band, __both__ criteria must be met:
 
 1. tol >= sqrt( sum( ( (e_i-o_i)/e_i )^2, i=1..n) / n )
 2. 4*tol >= max( (e_i-o_i)/e_i, i=1..n )
 
-The second criterion is to avoid high variance solutions which are good on average, given that infrequent but high error solutions are undesirable in practise.
-
-(My feeling is that there should be a way to
-define this in a way that depends on $n$, but
-I'm not sure of the maths right now. I'd have to do
-some thinking, but it feels like the maximum allowed
-error should grow as a function of $\sqrt{n}$, both for
-statistical and numerical reasons.)
+The second criterion is to avoid high variance solutions which are good on average, given that infrequent but high error solutions are undesirable in practice.
 
 Results Reporting
 ===
@@ -254,18 +207,6 @@ In addition to the performance reports described above, the following metrics of
 * Platform redevelopment time: the approximate time taken to redevelop an existing implementation targeted at one computing platform or technology so that it returns valid results upon another. If three or more platforms are targeted, take the mean of the redevelopment time.
 
 These metrics should be reported as the time, here a proxy for development effort, it takes to design or redesign a solver is often as significant consideration to developers as the performance of a solver on a particular platform.
-
-TODO: discuss:
-Portability: Related to the previous aspect. How difficult is it to re-deploy an existing solution onto a different device of the same architecture / a new device of a next generation architecture / a completely different architecture?
-
-The time it takes to design or redesign a solver is a significant consideration as developers need to get working results quickly. Many applications are also frequently tweaked and modified.
-
-* Flexibility
-TODO: discuss:
-	* give penalty points for products that cannot be priced (formal)?
-	* only text description?
-
-
 
 Reference Implementation
 ====
