@@ -179,74 +179,86 @@ Results Reporting
 Performance Metrics
 -----------
 
-Performance is measured in three ways:
+Performance of an implementation of one of the workloads is defined for three categories:
 
+- Latency: maximum seconds per workload
 - Throughput: average tasks per second
-- Latency: maximum seconds per task
 - Energy: average joules per task
 
-We might as well also capture the achieved accuracy
-statistics within the band as well, so two other fields
-are:
-- RMSE Error
-- Worst Error
+Latency for a workload is measured from the point that the first task in a workload enters the system, to the point that the last task in a workload leaves the system, i.e. the makespan of workload. The next workload cannot enter the system until the previous workload has left.
 
-For the given work-load of 10K options, the latency
-and throughput are measured for batches of:
-- 1 task for each of 10K batches
-- 100 tasks for each of 100 batches.
-- 10K tasks in a single batch
+Throughput is measured across all workloads, from the time that the first task of a workload enters to the time that the last task of the same workload leaves. As before, the next workload still cannot enter until the previous workload leaves.
 
-Latency for a batch is measured from the point
-that the first task in a batch enters the system, to the
-point that the last task in a batch leaves the
-system. The next batch cannot enter until the
-previous batch has left.
+Energy is measured in the same way, in terms of power consumption from the first task entering till the last task exits. The energy measured should be the total system energy, so the energy utilised by any computing resources necessary for the initialisation, performance and realisation of the task.
 
-Throughput is measured across all batches, from the
-time that the first task of the first batch enters to the
-time that the last task of the last batch leaves. As
-before, the next batch still cannot enter until the
-previous batch leaves. Energy is measured in the same
-way, in terms of power consumption from the first
-task entering till the last task exits.
+Entry and exit of a task is defined as ingress and egress over a network port, in order to capture any pre- or post processing needed.
 
-Entry and exit of the task is arbitrarily defined
-as ingress and egress over a network port, in order
-to capture any pre or post processing needed.
+Accuracy Metrics
+--------
+
+In addition to reporting the accuracy band that is achieved, the following achieved accuracy statistics should also be reported:
+
+- RMSE Error: as defined above, this applies to all of the tasks being evaluated.
+- Worst Error: the biggest absolute difference between the expected value versus the reference for all of the tasks being evaluated.
 
 
-Results
+Performance and Reporting Format
 -------
 
-So the reported results look like:
+The size-bounded workloads specified could be reported in a table with the following format:
 
-
+```
+Size-bounded Workloads Report
 Accuracy XXXX
-                           |  1/10K  | 100/100 |  10K/1  |
----------------------------+---------+---------+---------|
-Throughput (Tasks/Second)  |         |         |         |
----------------------------+---------+---------+---------|
-Latency    (Seconds/Task)  |         |         |         |
----------------------------+---------+---------+---------|
-Energy     (Joules/Task)   |         |         |         |
----------------------------+---------+---------+---------|
-RMSE Error                 |                             |
----------------------------+-----------------------------|
-Worst Error                |                             |
----------------------------+-----------------------------+
+                               |  1/10K  | 100/100 |  10K/1  |
+-------------------------------+---------+---------+---------|
+Throughput (Tasks/Second)      |         |         |         |
+-------------------------------+---------+---------+---------|
+Latency    (Seconds/workload)  |         |         |         |
+-------------------------------+-------------------+---------|
+Energy     (Joules/workload)   |         |         |         |
+-------------------------------+---------+---------+---------|
+RMSE Error                     |                             |
+-------------------------------+-----------------------------|
+Worst Error                    |                             |
+-------------------------------------------------------------+
+```
 
-(Presumably error doesn't vary with batch size - if it does,
-it can be broken down.)
+The above report presumes that error doesn't vary with workload size - if it does, it can be broken down.
 
+The Underlying/Option category workloads could be reported in a table with the following format:
 
-In addition to the main scoring, the two following aspects shall be included in the benchmark reports, either in textual form or as a second soft-score:
+```
+Underlying/Option Workloads Report
+Accuracy XXXX
+                               |   Underlying    | Option |
+-------------------------------+-----------------+--------|
+Throughput (Tasks/Second)      |                 |        |                  
+-------------------------------+-----------------+--------|
+Latency (Seconds/workload)     |                 |        |                  
+-------------------------------+-----------------+--------|
+Energy (Joules/workload)       |                 |        |                  
+-------------------------------+-----------------+--------|
+RMSE Error                     |                 |        |                  
+-------------------------------+-----------------+--------|
+Worst Error                    |                 |        | 
+----------------------------------------------------------+
+```
 
-* Design Effort  
-The time it takes to design or re-design a solver is a significant consideration as developers need to get working results quickly. Many applications are also frequently tweaked and modified.
+Development Metrics
+----------
+In addition to the performance reports described above, the following metrics of development should be included in the benchmark reports, either as quantitative form or described in prose:
 
-* Portability  
-Related to the previous aspect. How difficult is it to re-deploy an existing solution onto a different device of the same architecture / a new device of a next generation architecture / a completely different architecture? 
+* Initial development time: the approximate time taken to develop the first solver that returns a valid result for any of the accuracy band on any system for any of the tasks specified.
+* Solver redevelopment time: the mean approximate time that was spent refining the initial solver so as to be able to compute all of the tasks as reported elsewhere in a body work. This captures the time spent extending to new underlyings or options as well as any time spent "tuning" solvers to particular parameter sets. 
+* Platform redevelopment time: the approximate time taken to redevelop an existing implementation targeted at one computing platform or technology so that it returns valid results upon another. If three or more platforms are targeted, take the mean of the redevelopment time.
+
+These metrics should be reported as the time, here a proxy for development effort, it takes to design or redesign a solver is often as significant consideration to developers as the performance of a solver on a particular platform.
+
+TODO: discuss:
+Portability: Related to the previous aspect. How difficult is it to re-deploy an existing solution onto a different device of the same architecture / a new device of a next generation architecture / a completely different architecture?
+
+The time it takes to design or redesign a solver is a significant consideration as developers need to get working results quickly. Many applications are also frequently tweaked and modified.
 
 * Flexibility
 TODO: discuss:
