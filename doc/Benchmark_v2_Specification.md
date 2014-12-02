@@ -4,21 +4,29 @@ Motivation and Goals
 ===
 
 Developing accelerators for financial computations is currently a hot research topic. Many publications are out presenting dedicated SIMD, GPU, FPGA, ASIP, or ASIC implementations aimed to increase either the speed or the energy efficiency of one or a set of tasks. However, due to the large variety of underlying problems, models, algorithms, implementations, and evaluation metrics, it is nearly impossible to fairly tell which implementation is “best” for a given scenario.
-Evaluating and comparing different implementations is a challenge, especially if the target platforms differ. The point is that not all algorithms are suitable for all architectures, e.g. Monte Carlo methods might not converge as fast as quadrature or finite difference methods, but can easily be parallelized and therefore fit to highly parallel architectures like FPGAs or clusters.
-At the same time, cloud computing is moving into the finance domain and more and more institutes are going to offload compute intensive applications to cloud services.
-It is hard to evaluate how “good” those service perform compared to optimized GPU or FPGA solutions that can be kept in house.
-In addition, there is a difference between pricing only a single product and running a complete batch of pricing tasks.
-The system latency is a critical factor that needs to be considered here.
+Evaluating and comparing different implementations is a challenge, especially if the target platforms differ.
+
+The point is that not all algorithms are suitable for all architectures, e.g. Monte Carlo methods might not converge as fast as quadrature or finite difference methods, but can easily be parallelized and therefore fit to highly parallel architectures like FPGAs or clusters. At the same time, cloud computing is moving into the finance domain and more and more institutes are going to offload compute intensive applications to cloud services. It is hard to evaluate how “good” those services perform compared to optimized GPU or FPGA solutions that can be kept in house.
+
+In addition, there is a difference between pricing only a single product and running a complete batch of pricing tasks. The system latency is a critical factor that needs to be considered here.
 
 We therefore see a strong demand for a portable benchmark set that allows to evaluate the performance of a pricing system independent of its underlying architecture.
 
-More goals are:
+Our goals are:
 
-* The benchmark should provide an executable implementation example that generates the correct reference results (we propose a Python implementation here). This reference implementation is freely available.
-* The model parameters have to reflect meaningful and realistic scenarios on markets, but also cover corner cases as observed in the days just before a crash or another peculiar event.
-* We need meaningful people, institutes, and companies involved that ensure the necessary credibility of this approach and support the use of the benchmark in the finance and implementation domains.
-* The benchmark framework should be modular and easily extendable to more products and models.
+* To provide an unambigious, platform and algorithm independent benchmark of derivatives pricing problems.
+    * As part of the derivatives pricing benchmark, we provide an executable implementation that generates the correct reference results. This reference implementation is freely available here `TODO: Insert link here`
+    * The benchmark parameters reflect meaningful and realistic scenarios found in markets, but also cover corner cases as observed in the days just before a crash or other peculiar events.
+    * The benchmark framework is modular, and so is easily extendable to more products and models. Where possible, we provide guidance as to how it should be extended.
+    
+* To provide clear guidance on the performance metrics that should be reported for an implementation of the benchmark
+    * The categories and units of metrics that should be reported are specified as part of this benchmark.
+    * Where necessary we offer guidance as to how these metrics should be gathered and/or reported.
 
+In order to achieve these goals, we need researchers and developers, both in academic institutions and private companies:
+
+* To use and endorse the benchmark. The benchmark is only useful if it is credible amongst the target audience of computational finance acceleration research community.
+* Input in the form of suggestions for the improvement and extension of the benchmark
 
 Benchmark Structure
 ===
