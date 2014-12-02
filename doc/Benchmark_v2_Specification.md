@@ -4,7 +4,6 @@ Motivation and Goals
 ===
 
 Developing accelerators for financial computations is currently an interesting research topic both within academia and the private sector. Many publications are out presenting dedicated SIMD, GPU, FPGA, ASIP, or ASIC implementations aimed to increase either the speed or the energy efficiency of one or a set of tasks. However, due to the large variety of underlying problems, models, algorithms, implementations, and evaluation metrics, it is nearly impossible to fairly tell which implementation is “best” for a given scenario.
-Developing accelerators for financial computations is currently a hot research topic. Many publications are out presenting dedicated SIMD, GPU, FPGA, ASIP, or ASIC implementations aimed to increase either the speed or the energy efficiency of one or a set of tasks. However, due to the large variety of underlying problems, models, algorithms, implementations, and evaluation metrics, it is nearly impossible to fairly tell which implementation is “best” for a given scenario.
 Evaluating and comparing different implementations is a challenge, especially if the target platforms differ.
 
 The point is that not all algorithms are suitable for all architectures, e.g. Monte Carlo methods might not converge as fast as quadrature or finite difference methods, but can easily be parallelized and therefore fit to highly parallel architectures like FPGAs or clusters. At the same time, cloud computing is moving into the finance domain and more and more institutes are going to offload compute intensive applications to cloud services. It is hard to evaluate how “good” those services perform compared to optimized GPU or FPGA solutions that can be kept in house.
@@ -133,7 +132,7 @@ Two categories of workloads are defined:
 
 * Size-bound workloads:
     * Single task workloads. As there are 10000 tasks defined within the benchmark, there are 10000 single task workloads possible within the benchmark.
-    * 100 task workloads. Each 100 tasks are bundeled into a single workload. `TODO: add further clarification as how the tasks should be bundeled`.
+    * 100 task workloads. Each 100 tasks are bundeled into a single workload. There are 100 workloads of this size `TODO: add further clarification as how the tasks should be bundeled`.
     * 10000 task workload. This is a single workload comprising all of the tasks defined within the benchmark.
     
 * Underlying or Option Category workloads: Tasks which incorporate particular underlying or option type might be considered, e.g. all of the Heston underlyings or all of the Lookback Options. Furthermore, the combination of a particular option and underlying may also be considered, e.g. all of the tasks which are Asian options with Black Scholes underlyings.
@@ -165,10 +164,7 @@ Accuracy for a workload is defined in terms of RMSE. If there is a workload of _
 1. tol >= sqrt( sum( ( (e_i-o_i)/e_i )^2, i=1..n) / n )
 2. 4*tol >= max( (e_i-o_i)/e_i, i=1..n )
 
-The second criterion is to avoid high variance
-solutions which are good on average, given
-that infrequent but high error solutions are
-a bad thing in practise.
+The second criterion is to avoid high variance solutions which are good on average, given that infrequent but high error solutions are undesirable in practise.
 
 (My feeling is that there should be a way to
 define this in a way that depends on $n$, but
