@@ -28,10 +28,10 @@ In order to achieve these goals, we need researchers and developers, both in aca
 * To use and endorse the benchmark. The benchmark is only useful if it is credible amongst the target audience of computational finance acceleration research community.
 * Input in the form of suggestions for the improvement and extension of the benchmark
 
-Benchmark Structure
+Pricing Problems
 ===
 
-Problem domain
+Problem Structure
 ---
 
 Depending on their application (single price computation vs. portfolio evaluation, VaR, ...), the performance of product pricers can differ in a wide range, e.g. from a non-optimized single-threaded CPU program up to dedicated high-speed dataflow architectures or huge clusters.
@@ -175,7 +175,10 @@ some thinking, but it feels like the maximum allowed
 error should grow as a function of $\sqrt{n}$, both for
 statistical and numerical reasons.)
 
-Performance
+Results Reporting
+===
+
+Performance Metrics
 -----------
 
 Performance is measured in three ways:
@@ -255,7 +258,7 @@ TODO: discuss:
 
 
 Reference Implementation
-------------------------
+====
 The benchmark will consist of an automated evaluation framework with standard interfaces to arbitrary pricer implementations written in a high-level language.
 TODO: refine / discuss:
 - parameter inputs + result outputs
