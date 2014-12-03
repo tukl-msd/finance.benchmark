@@ -1,4 +1,5 @@
 Heston Benchmark v2.0 - Specification
+======================
 
 Motivation and Goals
 ===
@@ -92,7 +93,6 @@ Two possible points of expansion:
 [4]: http://en.wikipedia.org/wiki/Asian_option "Arithmetic Asian"
 
 Tasks and Workloads
-Workloads
 ---------
 A pricing task within the benchmark is formed from 10000 pairings of the defined underlying and options that have non-zero values. Each task is defined by its unique Task ID, as well as Underlying ID and Option ID that comprises its pairing. A reference value is also provided. The pairings are fixed, and are made available in this CSV file `TODO: Insert link here.`.
 
@@ -182,7 +182,7 @@ Accuracy XXXX
 Throughput (Tasks/Second)      |         |         |         |
 -------------------------------+---------+---------+---------|
 Latency    (Seconds/workload)  |         |         |         |
--------------------------------+-------------------+---------|
+-------------------------------+---------+---------+---------|
 Energy     (Joules/workload)   |         |         |         |
 -------------------------------+---------+---------+---------|
 RMSE Error                     |                             |
@@ -198,18 +198,18 @@ The Underlying/Option category workloads could be reported in a table with the f
 ```
 Underlying/Option Workloads Report
 Accuracy XXXX
-                               |   Underlying    | Option |
--------------------------------+-----------------+--------|
-Throughput (Tasks/Second)      |                 |        |                  
--------------------------------+-----------------+--------|
-Latency (Seconds/workload)     |                 |        |                  
--------------------------------+-----------------+--------|
-Energy (Joules/workload)       |                 |        |                  
--------------------------------+-----------------+--------|
-RMSE Error                     |                 |        |                  
--------------------------------+-----------------+--------|
-Worst Error                    |                 |        | 
-----------------------------------------------------------+
+                               | Underlying | Option |
+-------------------------------+------------+--------|
+Throughput (Tasks/Second)      |            |        |                  
+-------------------------------+------------+--------|
+Latency (Seconds/workload)     |            |        |                  
+-------------------------------+------------+--------|
+Energy (Joules/workload)       |            |        |                  
+-------------------------------+------------+--------|
+RMSE Error                     |            |        |                  
+-------------------------------+------------+--------|
+Worst Error                    |            |        | 
+-----------------------------------------------------+
 ```
 
 Development Metrics
