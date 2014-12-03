@@ -91,9 +91,23 @@ Two possible points of expansion:
 [3]: http://en.wikipedia.org/wiki/Lookback_option "Lookback"
 [4]: http://en.wikipedia.org/wiki/Asian_option "Arithmetic Asian"
 
+Tasks and Workloads
 Workloads
 ---------
 A pricing task within the benchmark is formed from 10000 pairings of the defined underlying and options that have non-zero values. Each task is defined by its unique Task ID, as well as Underlying ID and Option ID that comprises its pairing. A reference value is also provided. The pairings are fixed, and are made available in this CSV file `TODO: Insert link here.`.
+
+The breakdown of the pairings is provided in the table below:
+
+```
+                             | Barrier | Double Barrier | Lookback | Arithmetic Asian |
+-----------------------------+---------+----------------+----------+------------------+
+Black Scholes                |   834   |      833       |   833    |       833        |
+-----------------------------+---------+----------------+----------+------------------+
+Black Scholes Jump Diffusion |   833   |      834       |   833    |       833        |
+-----------------------------+---------+----------------+----------+------------------|
+Heston                       |   833   |      833       |   834    |       834        |
+--------------------------------------------------------------------------------------|
+```
 
 Two categories of workloads are defined:
 
