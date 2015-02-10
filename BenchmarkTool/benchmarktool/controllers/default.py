@@ -192,7 +192,7 @@ def add_simulation_from_benchmark():
                                 pass
                             else:
                                 market_parameters= sel_mkt_param_row['content'][0]
-                                market_parameters = {key: value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
+                                market_parameters = {key: [value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id']}
 
                                 " Get option parameter"
                                 search_str = HOST_URL+APPLICATION+"default/api/option_parameters/"+str(option_parameters)+".json"
@@ -201,7 +201,7 @@ def add_simulation_from_benchmark():
                                 except ValueError, e:
                                     pass
                                 else:
-                                    option_parameters= {key: value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
+                                    option_parameters= {key:[ value for key, value in sel_opt_param_row['content'][0].items() if key != 'id']}
                                     " Get option name"
                                     search_str = HOST_URL+'benchmarktool/default/api/option_price/'+str(option_parameters['option_type'])+'/name.json'
                                     try:
