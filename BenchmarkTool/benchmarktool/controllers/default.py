@@ -203,7 +203,7 @@ def add_simulation_from_benchmark():
                                 else:
                                     option_parameters= {key:[ value for key, value in sel_opt_param_row['content'][0].items() if key != 'id']}
                                     " Get option name"
-                                    search_str = HOST_URL+'benchmarktool/default/api/option_price/'+str(option_parameters['option_type'])+'/name.json'
+                                    search_str = HOST_URL+APPLICATION+"default/api/option_price/"+str(option_parameters['option_type'])+"/name.json"
                                     try:
                                         option_name = json.loads(requests.get(search_str).text);
                                     except ValueError, e:
