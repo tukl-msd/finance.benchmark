@@ -1,6 +1,7 @@
 # coding: utf8
 import json
 import requests
+import time
 
 from gluon.scheduler import Scheduler
 #Use migrate = True when you want to create all the tables
@@ -100,7 +101,6 @@ db.job.option_parameters.requires = [IS_IN_DB(db, db.option_parameters.id),IS_NO
 db.benchmark_set.mkt_parameters.requires = [IS_IN_DB(db, db.market_parameters.id),IS_NOT_EMPTY()]
 db.benchmark_set.opt_parameters.requires = [IS_IN_DB(db, db.option_parameters.id),IS_NOT_EMPTY()]
 
-db.simulation.compute_server.requires = [IS_IN_DB(db, db.scheduler_worker.id, '%(name)s'),IS_NOT_EMPTY()]
 db.simulation.result_id.requires = [IS_IN_DB(db, db.numeric_results.id),IS_NOT_EMPTY()]
 db.simulation.alg_parameters.requires = [IS_IN_DB(db,db.algorithm_parameters.id),IS_NOT_EMPTY()]
 
@@ -153,8 +153,6 @@ def send_simulation_id(task,sim_id):
     return (sim_id)
 
 def send_mail(task_set,job_id):
-    import time
-    
     num_tasks = len(task_set)
 	
     while num_tasks != 0:
@@ -180,5 +178,5 @@ def send_mail(task_set,job_id):
             pass
         else:
             email = email['content'][0]['email']
-            mail.send(email,'[BenchmarkTool] Your simulation is ready','You can check the results of your simulation on \"http://gwt.eit.uni-kl.de:8000/benchmarktool/default/results\" and search for Job ID number:'+str(job_id)+'.')
-    return
+            send_mail_result=mail.send(email,'[BenchmarkTool] Your simulation is ready','You can check the results of your simulation on \"http://gwt.eit.uni-kl.de:8000/benchmarktool/default/results\" and search for Job ID number:'+str(job_id)+'.')
+    return(send_mail_result)
