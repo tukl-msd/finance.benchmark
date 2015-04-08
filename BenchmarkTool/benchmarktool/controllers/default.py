@@ -12,9 +12,10 @@ import json
 
 import requests
 from requests.auth import HTTPBasicAuth
-
+"""
 import pygal
 from pygal.style import CleanStyle
+"""
 
 def index():
     """
@@ -145,7 +146,7 @@ def add_simulation_from_benchmark():
             pass
         else:
             " Create a list with all active working nodes names"
-            working_nd = [(working_nodes_row['content'][i]['id'], working_nodes_row['content'][i]['worker_name']) for i in range(len(working_nodes_row['content']))]
+            working_nd = [(str(working_nodes_row['content'][i]['group_names'][0]),str( working_nodes_row['content'][i]['group_names'][0])) for i in range(len(working_nodes_row['content']))]
 
             " Create a form to add new simulation based on pre-determined benchmarks "
             simulation_form=SQLFORM.factory(Field('benchmark_set', requires=IS_IN_SET(benchmarks, zero=T('-- Select benchmark set --'))),
@@ -192,7 +193,7 @@ def add_simulation_from_benchmark():
                                 pass
                             else:
                                 market_parameters= sel_mkt_param_row['content'][0]
-                                market_parameters = {key: value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
+                                market_parameters = {key:value for key, value in sel_mkt_param_row['content'][0].items() if key != 'id'}
 
                                 " Get option parameter"
                                 search_str = HOST_URL+APPLICATION+"default/api/option_parameters/"+str(option_parameters)+".json"
@@ -201,9 +202,13 @@ def add_simulation_from_benchmark():
                                 except ValueError, e:
                                     pass
                                 else:
-                                    option_parameters= {key:value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
+				    option_parameters= sel_opt_param_row['content'][0]
+				    
+                                    option_parameters = {key: value for key, value in sel_opt_param_row['content'][0].items() if key != 'id'}
+				    
+				    
                                     " Get option name"
-                                    search_str = HOST_URL+APPLICATION+"default/api/option_price/"+str(option_parameters['option_type'])+"/name.json"
+                                    search_str = HOST_URL+APPLICATION+"default/api/option_price/"+str(sel_opt_param_row['content'][0]['option_type'])+"/name.json"
                                     try:
                                         option_name = json.loads(requests.get(search_str).text);
                                     except ValueError, e:
@@ -216,33 +221,48 @@ def add_simulation_from_benchmark():
                                         "Create list of simulations from one job"
                                         job_sim_list = []
 		                            
-                                        " Assign all the simulations to the selected working nodes "
-                                        for resource in simulation_form.vars.available_resources:
-                                            payload = {'compute_server': resource, 'alg_parameters': new_alg_param, 'job_id': new_job}
-                                            try:
-                                                new_sim_param = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/simulation.json", data=payload).text)
-                                            except ValueError, e:
-                                                pass
-                                            else:
-                                                " Get the group name of selected node "
-                                                search_str = HOST_URL+APPLICATION+"default/api/scheduler_worker/"+str(resource)+"/group_names.json"
-		                            try:
-                                                working_group_row = json.loads(requests.get(search_str).text);
-                                            except ValueError, e:
-                                                pass
-                                            else:
-                                                working_group = working_group_row['content'][0]['group_names'][0]
-                                                "Queuing all tasks"
-                                                "simulation tasks"
-                                                task_id = scheduler.queue_task('new_sim',pvars=dict(mkt_param=market_parameters, opt_param=option_parameters, alg_param=payload_alg_param, sim_id=new_sim_param),group_name=working_group,timeout=36000)                       
-                                                db.commit()
-                                                "monitoring simulation tasks"
-                                                monitoring = scheduler.queue_task('send_simulation_id',pvars={'task':int(task_id.id),'sim_id':new_sim_param},group_name=working_group, timeout=36000)
-                                                job_sim_list.append(int(monitoring.id))
-                                                db.commit()
-                                        "send mail when all tasks finish"
-                                        send_mail_confirmation = scheduler.queue_task('send_mail',pvars={'task_set':job_sim_list,'job_id':new_job},group_name=working_group,timeout=36000)
-    return dict(simulation_form=simulation_form)
+ 					" Assign all the simulations to the selected working nodes "
+					for resource in simulation_form.vars.available_resources:
+						payload = {'compute_server': resource, 'alg_parameters': new_alg_param, 'job_id': new_job}
+						try:
+							new_sim_param = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/simulation.json", data=payload).text)
+						except ValueError, e:
+							pass
+						else:
+							" Get the group name of selected node "
+							working_group = resource
+							"Queuing all tasks"
+							if (working_group == "cpu"):
+								"simulation tasks"
+								task_id = scheduler.queue_task('new_sim',pvars=dict(mkt_param=market_parameters, opt_param=option_parameters, alg_param=payload_alg_param, sim_id=new_sim_param),group_name=working_group,timeout=36000)
+							elif (working_group == "fpga"):
+								heston={'spot_price':float(market_parameters['spot_price']),'reversion_rate':float(market_parameters['speed_of_revertion']),'long_term_avg_vola':float(market_parameters['long_run_variance']),'vol_of_vol':float(market_parameters['volatility_of_volatility']),'riskless_rate':float(market_parameters['riskless_interest_rate']),'vola_0':float(market_parameters['spot_volatility']),'correlation':float(market_parameters['correlation']), 'time_to_maturity':float(option_parameters['time_to_maturity']),'strike_price':float(option_parameters['strike_price'])}
+								if option_parameters['lbarrier_value'] is not None:
+									barrier_values={'lower':float(option_parameters['lbarrier_value'])}
+								else: 
+									barrier_values={'lower':float(0)}
+								if option_parameters['ubarrier_value'] is not None:
+									barrier_values['upper']=float(option_parameters['ubarrier_value'])
+								else: 
+									barrier_values['upper']=float(2147483648)
+								simulation_sl={'step_cnt':500,'path_cnt':100000}
+								simulation_ml={'start_level':float(payload_alg_param['start_level']),'ml_constant':float(payload_alg_param['multilevel_constant']),'path_cnt_start':float(payload_alg_param['number_of_paths_on_first_level']),'epsilon':float(payload_alg_param['epsilon'])}
+								simulation_eval={'start_level':0,'stop_level':5,'ml_start_level':float(payload_alg_param['start_level']),'ml_constant':float(payload_alg_param['multilevel_constant']),'path_cnt':100000}
+								reference={'price':float(payload_alg_param['reference_price']),'precision':float(payload_alg_param['price_precision'])}
+								json_param={'heston':heston,'barrier values':barrier_values,'simulation_sl':simulation_sl,'simulation_ml':simulation_ml,'simulation_eval':simulation_eval,'reference':reference}
+								"simulation tasks"
+								task_id = scheduler.queue_task('new_sim_fpga_ml',pvars=dict(json_param=json_param, sim_id=new_sim_param),group_name=working_group,timeout=36000)
+							
+							db.commit()
+							"monitoring simulation tasks"
+							monitoring = scheduler.queue_task('send_simulation_id',pvars={'task':int(task_id.id),'sim_id':new_sim_param},group_name=working_group, timeout=36000)
+							job_sim_list.append(int(monitoring.id))
+							db.commit()
+							if(len( simulation_form.vars.available_resources) == len(job_sim_list)):
+                                                                        "send mail when all tasks finish"
+                                                                        send_mail_confirmation = scheduler.queue_task('send_mail',pvars={'task_set':job_sim_list,'job_id':new_job,'wrk_group':working_group},group_name=working_group,timeout=36000)
+							
+	return dict(simulation_form=simulation_form)
 
 def results():
     job_id = ''
@@ -271,44 +291,15 @@ def results():
                     pass
                 else:
                     sim_result = sim_result['content'][0]
-        
-                    " Get worker_name "
-                    search_str = HOST_URL+APPLICATION+"default/api/scheduler_worker/"+str(simulation['compute_server'])+"/worker_name.json"
-                    try:
-                        working_node = json.loads(requests.get(search_str).text);
-                    except ValueError, e:
-                        pass
-                    else:
-                        working_node = working_node['content'][0]['worker_name']
-                        
-                        " Create a list with graph data "
-                        job_results.append({'compute_server':working_node,'energy':sim_result['energy'],'runtime_value':sim_result['runtime_value'],'price':sim_result['price'],'precision':sim_result['precision_value']})
+        	    " TODO fix worker name get!"
+                    " Create a list with graph data "
+                    job_results.append({'compute_server':simulation['compute_server'],'energy':sim_result['energy'],'runtime_value':sim_result['runtime_value'],'price':sim_result['price'],'precision':sim_result['precision_value']})
 
     elif results_form.errors:
         response.flash = T('This job ID doesn\'t exist. Please check it again!')
     return dict(job_id=job_id,results_form=results_form, job_results=job_results)
-
+"""
 def plot_graph():
-    """
-    worker = []
-    energy = []
-    runtime = []
-    price = []
-    precision = []
-
-    for result in request.vars.job_results:
-        worker.append(result['compute_server']+' - Price:'+str(result['price'])+' - Precision:'+str(result['precision']))
-        energy.append(result['energy'])
-        runtime.append(result['runtime_value'])
-    """
-    """
-    response.headers['Content-Type']='image/svg+xml'
-    bar_chart = pygal.Bar(style=CleanStyle) # Then create a bar graph object
-    bar_chart.title = 'Comparative simulation results'
-    bar_chart.x_labels = worker
-    bar_chart.add('Energy Consumption', energy)
-    bar_chart.add('Run Time', runtime)
-    """
     response.headers['Content-Type']='image/svg+xml'
     bar_chart = pygal.Bar(style=CleanStyle) # Then create a bar graph object
     bar_chart.title = 'Comparative simulation results - Price: 8.44603'
@@ -326,3 +317,4 @@ def plot_graph2():
     bar_chart.add('Precision', [0.00307696970932,0.00175369871849,0.000217213253867]) # Add some values
 
     return bar_chart.render()
+"""
