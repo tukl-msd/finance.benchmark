@@ -1,12 +1,11 @@
 # coding: utf8
 import json
 import requests
-import time
 
 from gluon.scheduler import Scheduler
 #Use migrate = True when you want to create all the tables
-#scheduler = Scheduler(db)
-scheduler = Scheduler(db, migrate=False)
+scheduler = Scheduler(db)
+#scheduler = Scheduler(db, migrate=False)
 
 # table definition
 db.define_table('algorithm_parameters',
@@ -62,7 +61,7 @@ db.define_table('benchmark_set',
                 format='%(name)s')
 
 db.define_table('simulation',
-                Field('compute_server', db.scheduler_worker),
+                Field('compute_server', 'string'),
                 Field('alg_parameters',db.algorithm_parameters),
                 Field('job_id',db.job),
                 Field('result_id',db.numeric_results))
@@ -131,6 +130,65 @@ def new_sim(mkt_param, opt_param, alg_param, sim_id):
             db.commit()
     return (r)
 
+def new_sim_fpga_ml(json_param, sim_id):
+	import subprocess
+	f = open(FPGA_BENCHMARK_PATH+"parameters/"+str(sim_id)+".json", 'w+')	
+        f.seek(0)
+        f.write(str(json_param).replace("'",'"'))	
+	f.close()
+	cmnd = "sudo "+FPGA_BENCHMARK_PATH+FPGA_BENCHMARK_SCRIPT_ML+" "+str(sim_id)+".json";
+	try:
+            output = subprocess.check_output(cmnd,shell=True)
+        except subprocess.CalledProcessError as e:
+            r = e
+        else:
+            results=output[1:-2].split(',')
+
+            energy = float(results[0])
+            runtime_value = float(results[1])
+            price = float(results[2])
+	    precision_value = float(results[3])
+
+            " Insert result into database"
+            payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
+            try:
+                r = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/numeric_results.json", data=payload).text)
+            except ValueError, e:
+                r = e
+            else:
+                db.commit()
+	return (r)
+
+def new_sim_fpga_sl(json_param, sim_id):
+	import subprocess
+	f = open(FPGA_BENCHMARK_PATH+"parameters/"+str(sim_id)+".json", 'w+')	
+        f.seek(0)
+        f.write(str(json_param).replace("'",'"'))	
+	f.close()
+	cmnd = "sudo "+FPGA_BENCHMARK_PATH+FPGA_BENCHMARK_SCRIPT_SL+" "+str(sim_id)+".json";
+	try:
+            output = subprocess.check_output(cmnd,shell=True)
+        except subprocess.CalledProcessError as e:
+            r = e
+        else:
+            results=output[1:-2].split(',')
+
+            energy = float(results[0])
+            runtime_value = float(results[1])
+            price = float(results[2])
+	    precision_value = float(results[3])
+
+            " Insert result into database"
+            payload = {'energy': energy , 'runtime_value': runtime_value ,'price': price ,'precision_value': precision_value}
+            try:
+                r = json.loads(requests.post(HOST_URL+APPLICATION+"default/api/numeric_results.json", data=payload).text)
+            except ValueError, e:
+                r = e
+            else:
+                db.commit()
+	return (r)
+
+
 def send_simulation_id(task,sim_id):
     num_result_id = None
     " Pooling loop "
@@ -152,14 +210,16 @@ def send_simulation_id(task,sim_id):
         db.commit()
     return (sim_id)
 
-def send_mail(task_set,job_id):
-    num_tasks = len(task_set)
-	
-    while num_tasks != 0:
+def send_mail(task_set,job_id,wrk_group):
+    import time
+
+    tasks_ctrl = task_set
+
+    while not tasks_ctrl:
         for task in task_set:
             task_status = scheduler.task_status(task, output=True)
             if task_status.result:
-                num_tasks=num_tasks-1
+                tasks_ctrl= tasks_ctrl.remove(task)
         time.sleep(60)
 
     " Send mail to user "
@@ -178,5 +238,5 @@ def send_mail(task_set,job_id):
             pass
         else:
             email = email['content'][0]['email']
-            send_mail_result=mail.send(email,'[BenchmarkTool] Your simulation is ready','You can check the results of your simulation on \"http://gwt.eit.uni-kl.de:8000/benchmarktool/default/results\" and search for Job ID number:'+str(job_id)+'.')
-    return(send_mail_result)
+            mail.send(email,'[BenchmarkTool] Your simulation is ready','You can check the results of your simulation on \"http://gwt.eit.uni-kl.de/benchmarktool/default/results\" and search for Job ID number:'+str(job_id)+'.')
+    return
