@@ -1,0 +1,227 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{url}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{color}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+\lstset{language=Python} 
+\title{Usage Manual for the backend bechmarktool web application}
+\renewcommand*\contentsname{Summary}
+\let\OldUrlFont\UrlFont \renewcommand{\UrlFont}{\small\OldUrlFont}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+This manual is a quick guide that explains how to manipulate data with the benchmarktool web application.
+It explains how to check the existing registers on the database, and how to add new benchmark sets and benchmark parameters. 
+
+
+\section{Listing the existent registers on a table}
+To list all the registers on an existing table of the system, you must perform perform a GET on the following URL:
+
+\noindent\url{https://<host_name>/<application name>/default/api/<table_name>.json}
+
+In the current deployment scenario:
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/<table_name>.json}
+
+\section{Adding new register to tables}
+\subsection{Adding an option price}
+A register in the option price table is composed by an ID and a name. 
+Since the ID fields are auto-incremented by default in our application, only the name should be defined. 
+The type of the field "name" is string.
+
+To add a new option price it is necessary to insert a tuple in the database.
+In our architecture, the way of doing this is performing a POST via HTTPS, since we are using a REST architecture.
+The data to be added should be in the payload field and then a POST request has to be sent to the URL: 
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/option_price.json}
+
+In case of a new installation, the URL format should be:
+
+\noindent\url{https://<host_name>/<application name>/default/api/option_price.json}
+
+An example using the requests library for Python:
+\begin{lstlisting}
+payload_option_price={"name":"OPTION_TYPE_CALL_DIGITAL"}
+requests.post("https://gwt.eit.uni-kl.de/benchmarktool/default/api/option_price.json", data=payload_option_price)
+\end{lstlisting}
+
+\subsection{Adding a barrier type}
+A register in the barrier table is composed by an ID and a name. 
+Since the ID fields are auto-incremented by default in our application, only the name should be defined. 
+The type of the field "name" is string.
+To add a new barrier type it is necessary to insert a tuple in the database. 
+In our architecture, the way of doing this is performing a POST via HTTPS, since we are using a REST architecture.
+The data to be added should be in the payload field and then a POST request has to be sent to the URL: 
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/barrier.json}
+
+In case of a new installation, the URL format should be:
+
+\noindent\url{https://<host_name>/<application name>/default/api/barrier.json}
+
+An example using the requests library for Python:
+\begin{lstlisting}
+	payload_barrier={"name":"BARRIER_TYPE_KNOCK_OUT"}
+	requests.post("https://gwt.eit.uni-kl.de/benchmarktool/default/api/barrier.json", data=payload_barrier)
+\end{lstlisting}
+
+\subsection{Adding a market parameter}
+A market parameter is a tuple composed by the parameters that define a specific market.
+It is composed by the following parameters:
+\begin{itemize}
+	\item correlation
+	\item long run variance
+	\item speed of revertion
+	\item volatility of volatility
+	\item spot price
+	\item spot volatility
+	\item riskless interest rate
+\end{itemize}
+
+To perform a simulation you must define all those parameters, since they are a fundamental part of the market simulation algorithms.
+The way to define them is to add a tuple in the database by performing a POST via HTTPS, since we are using a REST architecture.
+The data to be added should be in the payload field and then a POST request has to be sent to the URL: 
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/market_parameters.json}
+
+In case of a new installation, the URL format should be:
+
+\noindent\url{https://<host_name>/<application name>/default/api/market_parameters.json}
+
+An example using the requests library for Python:
+\begin{lstlisting}
+payload_market_param={"spot_price": 100.0, "long_run_variance": 0.09, "volatility_of_volatility": 1.0, "spot_volatility": 0.09, "riskless_interest_rate": 0.05, "correlation": -0.3, "speed_of_revertion": 2.0}
+requests.post("https://gwt.eit.uni-kl.de/benchmarktool/default/api/market_parameters.json", data=payload_market_param)
+\end{lstlisting}
+
+The respective types of the parameters are:
+\begin{itemize}
+	\item correlation: double
+	\item long\_run\_variance: double
+	\item speed\_of\_revertion: double
+	\item volatility\_of\_volatility: double
+	\item spot\_price: double
+	\item spot\_volatility: double
+	\item riskless\_interest\_rate: double
+\end{itemize}
+
+\subsection{Adding an option parameter}
+
+An option parameter is a tuple composed by the parameters that define an specific option.
+It is composed by the following parameters:
+\begin{itemize}
+	\item option type
+	\item strike price
+	\item time to maturity
+	\item lower barrier type
+	\item lower barrier value
+	\item upper barrier type
+	\item upper barrier value
+\end{itemize}
+
+To perform a simulation you must define all those parameters, since they are a fundamental part of the benchmarks.
+The way to define them is to add a tuple in the database by performing a POST via HTTPS, since we are using a REST architecture.
+The data to be added should be in the payload field and then a POST request has to be sent to the URL: 
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/option_parameters.json}
+
+In case of a new installation, the URL format should be:
+
+\noindent\url{https://<host_name>/<application name>/default/api/option_parameters.json}
+
+An example using the requests library for Python:
+\begin{lstlisting}
+payload_option_param = {"time_to_maturity": 1.0, "strike_price": 100.0,  "lbarrier_value": 90.0, "ubarrier_value": 110.0, "option_type": 2, "lbarrier_type": 1, "ubarrier_type": 1}
+requests.post("https://gwt.eit.uni-kl.de/benchmarktool/default/api/option_parameters.json", data=payload_option_param)
+\end{lstlisting}
+
+
+The respective types of the parameters are:
+\begin{itemize}
+	\item option\_type: integer (FK to table option\_price)
+	\item strike\_price: double
+	\item time\_to\_maturity: double
+	\item lbarrier\_type: integer (FK to table barrier)
+	\item lbarrier\_value: double
+	\item ubarrier\_type: integer (FK to table barrier)
+	\item ubarrier\_value: double
+\end{itemize}
+
+\subsection{Benchmark Set}
+A benchmark set is composed by name, description, market parameters and option parameters. 
+As it is an REST architecture, to add a new benchmark set it is necessary to perform a POST  via HTTPS.
+The data to be added should be in the payload field and then a POST request has to be sent to the URL: 
+
+\noindent\url{https://gwt.eit.uni-kl.de/benchmarktool/default/api/benchmark_set.json}
+
+In case of a new installation, the URL format should be:
+
+\noindent\url{https://<host_name>/<application name>/default/api/benchmark_set.json}
+
+An example using the requests library for Python:
+\begin{lstlisting}
+payload_benchmark_set = {"mkt_parameters": 1, "description": "Benchmark set detailed description.", "opt_parameters": 1, "name": "Benchmark 1"}
+requests.post("https://gwt.eit.uni-kl.de/benchmarktool/default/api/benchmark_set.json", data=payload_benchmark_set)
+\end{lstlisting}
+
+The respective types of the parameters are:
+\begin{itemize}
+	\item name: string
+	\item description: long string
+	\item mkt\_parameters: (FK to table option\_parameters)
+	\item opt\_parameters: (FK to table market\_parameters)
+\end{itemize}
+
+\section{Starting a Working Node}
+Working nodes are automatically registered into the system once the web2py process is started. 
+To be able to disconnect from the remote connection, it is advisable to first start a screen and then start web2py inside it.
+The words inside the curly brackets must be replaced with the appropriated ones.
+\begin{lstlisting}
+[web2py: ~]# screen
+[web2py: ~]# python {full path to web2py}/web2py.py -a '<recycle>' -i {interface's IP} -p {port}
+web2py Web Framework
+Created by Massimo Di Pierro, Copyright 2007-2015
+Version 2.9.12-stable+timestamp.2015.01.17.06.11.03
+Database drivers available: sqlite3, pymysql, pg8000, imaplib
+
+please visit:
+        http://127.0.0.1:8000/
+use "kill -SIGTERM 19414" to shutdown the web2py server
+
+starting scheduler for "benchmarktool"...
+
+Currently running 1 scheduler processes
+Processes started
+
+\end{lstlisting}
+
+
+\end{document}

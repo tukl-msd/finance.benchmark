@@ -1,0 +1,127 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{graphicx}           % pacote para importar figuras
+\graphicspath{ {images/} }
+\usepackage{url}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{color}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+\lstset{language=Python} 
+\title{Usage Manual for the Bechmarktool Web Application User's Interface}
+\renewcommand*\contentsname{Summary}
+\let\OldUrlFont\UrlFont \renewcommand{\UrlFont}{\small\OldUrlFont}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+This manual is a quick guide that explains how to perform simulation on the benchmarktool web application.
+The main features are explained in detail, from the registration steps upto checking the final simulation results.
+
+\section{Accessing the system}
+The system can be accessed through the following URL:
+\noindent\url{\TODO{add the URL}}
+On the left hand side it is possible to check the available options and on the main frame it's shown the content of the active option.
+
+TODO{add initial page image}
+
+\section{Registering on the system}
+To start a new simulation, it's necessary to be registered on the system. 
+This is done by filling up a simple registration form with personal data.
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{registration}
+		\caption{Registration Form\label{fig:registration}}
+	\end{center}
+\end{figure}
+
+Figure ~\ref{fig:registration} shows how this form looks like.
+After filling up the form, you should click on the ``Save" button and then the registration process is done.
+
+\section{Performing Simulations}
+Whenever one wants to compare two different implementations of market simulation with hardware acceleration, one should perform a benchmark over those platforms, through simulations. 
+It is necessary to login into the system in order to be able to access the simulation form.
+On the left hand side from the menu, the user must select ``Simulator" and a screen as in the image below will be shown:
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{simulator_login}
+		\caption{Login Form\label{fig:login}}
+	\end{center}
+\end{figure}
+
+To login, it is necessary to fill in the form with correct username - password, as well as the CAPTCHA value, and click the button ``Login".
+Then, the simulator interface will be available, allowing the user to perform new simulations.
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{simulator}
+		\caption{Simulation Form\label{fig:simulator}}
+	\end{center}
+\end{figure}
+
+Figure~\ref{fig:simulator} shows the form where the user can choose the parameters to perform a benchmark.
+The dropdown menu ``Benchmark Set" contains all the benchmark sets available in the system.
+A benchmark set has a name associated with market parameters and option parameters, meaning that, once a benchmark set is selected, the market and the option parameters are automatically selected as well.
+The algorithm parameters are filled already with the default values, but the user has freedom to change them before starting the simulation.
+The algorithms parameters are composed by:
+\begin{itemize}
+	\item Start Level
+	\item Multilevel Constant
+	\item Epsilon
+	\item Number Of Paths On the First Level
+	\item Reference Price
+	\item Price Precision
+\end{itemize}
+
+At the end of the Simulator page, there is a field called ``Available Resources" where the user can select one or more resources to perform the benchmark and compare the results. 
+To select a node to perform the simulation it is enough to check the check box beside its name.
+Once all the parameters are defined, it is necessary to click on the button ``Start Simulation".
+As soon as the simulation finishes, an e-mail will be send to the user with the respective simulation ID.
+
+\section{Checking the Simulation Results}
+Whenever a simulation is finished, the user will receive an e-mail with an identification number associated with the simulation.
+The simulation results can be viewed from the ``Results" menu.
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{results}
+		\caption{Results Form\label{fig:results}}
+	\end{center}
+\end{figure}
+The results form (Figure~\ref{fig:results}) is a really simple form, where the user can enter the ID of already performed simulations and search for its results. 
+After clicking on ``Show Results", a graph comparing both simulations will be displayed.
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{results_graphs}
+		\caption{Results of performed simulations\label{fig:results_graphs}}
+	\end{center}
+\end{figure}
+
+\end{document}
